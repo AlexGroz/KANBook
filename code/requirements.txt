@@ -1,0 +1,3 @@
+# Для запуска code/kan_torch.py (опционально).
+# Версия CPU подойдёт: см. https://pytorch.org/get-started/locally/
+torch>=2.0

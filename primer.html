@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Нулевой модуль. Python и словарь ML — KANBook</title>
+<meta name="description" content="Старт с абсолютного нуля: как запустить Python, базовый синтаксис, математические обозначения и словарь ML/LLM.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Модуль 0</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="index.html" title="Оглавление" aria-label="Оглавление">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-1.html" title="Глава 1 →" aria-label="Глава 1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание модуля</p>
+    <p class="sidebar-chapter">0. Python и словарь ML</p>
+    <nav id="sidebar-toc" aria-label="Содержание модуля"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть 0 · Старт с нуля</p>
+      <h1>Нулевой модуль: Python, математика и словарь</h1>
+      <p class="lead">
+        Если вы никогда не программировали и не знаете слов MLP, LLM и
+        «претрейн» — начните здесь. Этот модуль не заменяет учебник по Python,
+        но даёт минимум, чтобы читать книгу и запускать примеры.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Модуль 0</strong> · для старта с нуля</span>
+        <span class="meta-chip">≈ 45 минут</span>
+        <span class="meta-chip">Python · обозначения · глоссарий</span>
+        <span class="meta-chip">сложность: новичок</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Не обязательно знать всё заранее. Достаточно понимать, где искать.
+        <cite>Практическое правило этой книги</cite>
+      </p>
+      <h2 id="s0-1" data-num="0.1">Как запустить Python</h2>
+
+      <p>
+        Для чтения книги Python не обязателен. Для практики — нужен. Проверьте,
+        установлен ли он:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 --version
+Python 3.12.3</code></pre>
+      </div>
+
+      <p>
+        Если команда не найдена, установите Python 3.10+ с официального сайта или
+        через пакетный менеджер системы. Дальше создайте отдельное окружение,
+        чтобы не засорять системный Python:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал — виртуальное окружение</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ cd /home/alexey/Projects/KANBook
+$ python3 -m venv .venv
+$ source .venv/bin/activate          # Windows: .venv\Scripts\activate
+$ python --version</code></pre>
+      </div>
+
+      <p>
+        Запуск скрипта — это просто вызов файла:
+        <code>python3 code/kan_demo_pure.py</code>. Строка
+        <code>python3</code> означает «интерпретатор Python версии 3», а путь —
+        файл, который нужно выполнить. Ошибка в терминале — нормально: читайте
+        последнюю строку, там обычно написано, что не так.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Команда</th><th>Что делает</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>python3 file.py</code></td><td>Запустить файл</td></tr>
+            <tr><td><code>python3</code></td><td>Открыть интерактивную консоль (REPL)</td></tr>
+            <tr><td><code>pip install package</code></td><td>Установить библиотеку в окружение</td></tr>
+            <tr><td><code>Ctrl+C</code></td><td>Прервать долгую команду</td></tr>
+            <tr><td><code>Ctrl+D</code> или <code>exit()</code></td><td>Выйти из Python</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Нужен ли PyTorch?</p>
+        <p>
+          В части I есть примеры на PyTorch, но основной путь в части II —
+          чистый Python и браузер. PyTorch понадобится, если вы захотите
+          обучать глубокие KAN на своих данных. Для первых шагов достаточно
+          стандартной библиотеки.
+        </p>
+      </div>
+
+      <h2 id="s0-2" data-num="0.2">Python за двадцать минут</h2>
+
+      <p>
+        Программа — это последовательность инструкций. Переменная — имя, под
+        которым хранится значение. Вот минимальный набор конструкций, которых
+        хватит для книги.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">basics.py — переменные и числа</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">x = 2.5              # число
+name = "Iris"        # строка
+is_ready = True      # логическое значение
+
+y = x * 2 + 1
+print(y)             # 6.0
+print(f"x = {x}, y = {y}")</code></pre>
+      </div>
+
+      <p>
+        Списки хранят последовательность, словари — пары «ключ → значение».
+        Индексация в Python начинается с нуля.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">collections.py — списки и словари</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">features = [5.1, 3.5, 1.4, 0.2]
+print(features[0])        # 5.1
+print(len(features))      # 4
+
+sample = {"species": "setosa", "petal_width": 0.2}
+print(sample["species"])  # setosa
+
+for value in features:
+    print(value * 2)</code></pre>
+      </div>
+
+      <p>
+        Функция — именованный блок кода с аргументами и возвращаемым значением.
+        Именно так в книге оформлены базис, прямой проход и потери.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">functions.py — функция и цикл</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">def normalize(value, lo, hi):
+    return -1 + 2 * (value - lo) / (hi - lo)
+
+for value in [4.3, 5.1, 7.9]:
+    print(normalize(value, 4.3, 7.9))</code></pre>
+      </div>
+
+      <p>
+        Импорт подключает модуль. Например, <code>import math</code> даёт
+        <code>math.sin</code>, <code>math.exp</code> и
+        <code>math.sqrt</code>. Файлы читают через <code>open(...)</code>, а
+        ошибки ловят конструкцией <code>try/except</code>.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">files.py — чтение CSV</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">import csv
+
+with open("code/data/iris.csv", encoding="utf-8") as f:
+    for row in csv.DictReader(f):
+        print(row["species"], row["petal_width"])
+        break</code></pre>
+      </div>
+
+      <div class="callout practice">
+        <p class="callout-title">Как учиться программированию</p>
+        <p>
+          Набирайте код руками, меняйте числа, ломайте и читайте ошибки. Одна
+          ошибка, которую вы исправили сами, стоит десяти прочитанных примеров.
+          Не бойтесь временно удалить строку и посмотреть, что изменится.
+        </p>
+      </div>
+      <h2 id="s0-3" data-num="0.3">Как читать математические записи</h2>
+
+      <p>
+        Формулы в книге — не экзамен. Это сжатая запись того, что делает код.
+        Достаточно знать несколько символов.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Запись</th><th>Читается как</th><th>Смысл</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="math">Σ<sub>i=1</sub><sup>N</sup> x<sub>i</sub></span></td><td>«сумма x<sub>i</sub> по i от 1 до N»</td><td>Сложить все значения</td></tr>
+            <tr><td><span class="math">x<sub>i</sub></span></td><td>«x с индексом i»</td><td>Элемент номер i</td></tr>
+            <tr><td><span class="math">x<sup>2</sup></span></td><td>«x в квадрате»</td><td>Умножить x на себя</td></tr>
+            <tr><td><span class="math">f(x)</span></td><td>«f от x»</td><td>Функция применяется к x</td></tr>
+            <tr><td><span class="math">θ</span></td><td>«тета»</td><td>Все параметры модели</td></tr>
+            <tr><td><span class="math">∂L/∂w</span></td><td>«частная производная L по w»</td><td>Как меняется L при изменении w</td></tr>
+            <tr><td><span class="math">∇L</span></td><td>«градиент L»</td><td>Вектор всех производных</td></tr>
+            <tr><td><span class="math">arg min<sub>θ</sub></span></td><td>«θ, при котором минимум»</td><td>Найти лучшие параметры</td></tr>
+            <tr><td><span class="math">∈</span></td><td>«принадлежит»</td><td>Элемент множества</td></tr>
+            <tr><td><span class="math">≈</span></td><td>«примерно равно»</td><td>Приближение</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Вектор — список чисел, матрица — таблица чисел. Запись
+        <span class="math">W ∈ ℝ<sup>m×d</sup></span> означает «матрица W с m
+        строками и d столбцами». Произведение
+        <span class="math">Wx</span> — это применение линейного преобразования
+        к вектору.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Полезная привычка</p>
+        <p>
+          Читая формулу, проговаривайте её словами и проверяйте на маленьком
+          примере. Например, возьмите два числа и посмотрите, что даёт сумма.
+          Если формула не пугает на двойке, она не страшна и на тысяче.
+        </p>
+      </div>
+
+      <h2 id="s0-4" data-num="0.4">Словарь: ML, MLP, LLM и KAN</h2>
+
+      <p>
+        Эти слова встретятся в книге постоянно. Определения короткие; подробности
+        будут в главах.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Термин</th><th>Простыми словами</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Машинное обучение (ML)</strong></td><td>Программа учится на данных, а не работает по жёстко прописанным правилам</td></tr>
+            <tr><td><strong>Нейросеть</strong></td><td>Функция с настраиваемыми параметрами, собранная из слоёв</td></tr>
+            <tr><td><strong>MLP</strong></td><td>Многослойный перцептрон: полносвязная нейросеть, где нелинейность стоит в узлах</td></tr>
+            <tr><td><strong>Слой</strong></td><td>Один шаг преобразования входа в выход</td></tr>
+            <tr><td><strong>Вес</strong></td><td>Число, на которое умножается вход</td></tr>
+            <tr><td><strong>Смещение (bias)</strong></td><td>Постоянная добавка к выходу</td></tr>
+            <tr><td><strong>Активация</strong></td><td>Нелинейная функция: ReLU, SiLU, tanh и т. п.</td></tr>
+            <tr><td><strong>Функция потерь</strong></td><td>Число, показывающее, насколько модель ошиблась</td></tr>
+            <tr><td><strong>Градиент</strong></td><td>Направление и скорость роста потерь; учимся идти против него</td></tr>
+            <tr><td><strong>Эпоха</strong></td><td>Один полный проход по обучающим данным</td></tr>
+            <tr><td><strong>Батч</strong></td><td>Порция примеров для одного шага обучения</td></tr>
+            <tr><td><strong>Переобучение</strong></td><td>Модель запомнила тренировку и плохо работает на новых данных</td></tr>
+            <tr><td><strong>KAN</strong></td><td>Сеть, где обучаемые функции стоят на рёбрах, а узлы только суммируют</td></tr>
+            <tr><td><strong>Сплайн</strong></td><td>Кусочно-полиномиальная функция; в KAN задаёт форму ребра</td></tr>
+            <tr><td><strong>LLM</strong></td><td>Большая языковая модель: трансформер, предсказывающий следующий токен</td></tr>
+            <tr><td><strong>Токен</strong></td><td>Кусочек текста (слово, часть слова, символ), превращённый в число</td></tr>
+            <tr><td><strong>Трансформер</strong></td><td>Архитектура с self-attention и MLP-блоками; основа современных LLM</td></tr>
+            <tr><td><strong>Претрейн</strong></td><td>Первое обучение на большом корпусе для общих представлений</td></tr>
+            <tr><td><strong>Дообучение</strong></td><td>Адаптация предобученной модели к конкретной задаче</td></tr>
+            <tr><td><strong>Инференс</strong></td><td>Применение обученной модели к новым данным</td></tr>
+            <tr><td><strong>Развёртывание</strong></td><td>Запуск модели в виде страницы, API или сервиса для пользователей</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Если запомнить только одно</p>
+        <p>
+          MLP учит числа на рёбрах, KAN — функции на рёбрах. LLM — это большая
+          сеть, которая предсказывает следующий токен. Всё остальное —
+          уточнения.
+        </p>
+      </div>
+      <h2 id="s0-5" data-num="0.5">Маршрут: что читать и в каком порядке</h2>
+
+      <p>
+        Книга устроена как один маршрут. Не выбирайте, что пропустить: каждая
+        глава опирается на предыдущую. Если что-то уже знакомо, это будет
+        полезным повторением.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Этап</th><th>Что освоите</th><th>Зачем это нужно</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0–1</td><td>Python, словарь, понятия ML</td><td>Без этого текст будет набором слов</td></tr>
+            <tr><td>2–3</td><td>Математика, MLP, backprop</td><td>Понять, как вообще обучается сеть</td></tr>
+            <tr><td>4–5</td><td>Теорема, B-сплайны, код KAN</td><td>Понять устройство KAN и запустить её</td></tr>
+            <tr><td>6–7</td><td>Данные, метрики, реальная KAN</td><td>Получить честно оценённую модель</td></tr>
+            <tr><td>8–9</td><td>Претрейн, LLM, сервис</td><td>Понять масштаб и довести модель до людей</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Полный путь выглядит так:
+      </p>
+
+      <div class="roadmap">
+        <span class="step now">0 · Python и словарь</span>
+        <span class="arrow">→</span>
+        <span class="step now">1–3 · Основы и MLP</span>
+        <span class="arrow">→</span>
+        <span class="step now">4–5 · Теория и код KAN</span>
+        <span class="arrow">→</span>
+        <span class="step now">6–7 · Данные и реальная KAN</span>
+        <span class="arrow">→</span>
+        <span class="step now">8 · Претрейн и LLM</span>
+        <span class="arrow">→</span>
+        <span class="step now">9 · Сервис</span>
+        <span class="arrow">→</span>
+        <span class="step now">Демо</span>
+      </div>
+
+      <p>
+        Ориентир по времени: модуль 0 — 45 минут, главы 1–5 — около 5 часов,
+        главы 6–9 — ещё около 4 часов, практика — от одного вечера. Не гонитесь
+        за скоростью: лучше пройти три главы и запустить три примера, чем
+        прочитать девять и не запустить ни одного.
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Как читать код в книге</p>
+        <p>
+          Сначала запустите как есть. Потом измените один параметр (например,
+          число шагов или G). Потом сломайте что-нибудь специально и прочитайте
+          ошибку. Так появляется понимание, которого не даёт пассивное чтение.
+        </p>
+      </div>
+
+      <h2 id="s0-6" data-num="0.6">Упражнения</h2>
+
+      <ol>
+        <li>
+          Запустите <code>python3 code/kan_demo_pure.py</code>. Что напечатала
+          программа в последней строке?
+        </li>
+        <li>
+          Объясните своими словами, что означает запись
+          <span class="math">Σ<sub>i=1</sub><sup>3</sup> x<sub>i</sub></span>.
+        </li>
+        <li>
+          Чем MLP отличается от KAN в одном предложении?
+        </li>
+        <li>
+          Что такое токен и зачем он нужен LLM?
+        </li>
+        <li>
+          Зачем нужны train, validation и test, если можно просто обучить модель?
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            Строка с коэффициентами сплайна — например,
+            <code>+0.4163, -0.0116, ...</code>. До неё программа печатает MSE до
+            и после обучения.
+          </li>
+          <li>
+            Сумма трёх чисел: <span class="math">x<sub>1</sub> + x<sub>2</sub> + x<sub>3</sub></span>.
+          </li>
+          <li>
+            В MLP обучаются числа-веса, а нелинейность фиксирована в узлах; в KAN
+            обучаются функции на рёбрах, а узлы только суммируют.
+          </li>
+          <li>
+            Токен — кусочек текста, превращённый в число. LLM предсказывает
+            следующий токен, поэтому ей нужен дискретный алфавит.
+          </li>
+          <li>
+            Train — учиться, validation — выбирать настройки, test — один раз
+            честно оценить. Иначе модель можно подогнать под все данные и
+            получить завышенную оценку.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s0-7" data-num="0.7">Итоги модуля</h2>
+
+      <ul>
+        <li>
+          Python запускается командой <code>python3 file.py</code>; для практики
+          достаточно базовых типов, циклов и функций.
+        </li>
+        <li>
+          Математические записи — это сжатый код; Σ, индексы и производные
+          читаются словами.
+        </li>
+        <li>
+          MLP учит числа на рёбрах, KAN — функции; LLM предсказывает следующий
+          токен.
+        </li>
+        <li>
+          У книги один маршрут: идите по порядку и не пропускайте практику.
+          Знакомое будет повторением — это нормально и полезно.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Дальше</p>
+        <p>
+          Готовы? Открывайте главу 1 — там мы договариваемся о понятиях и
+          собираем задачу обучения. Если что-то осталось непонятным, вернитесь к
+          словарю: это нормально.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация">
+      <a class="prev" href="index.html">
+        <span class="dir">← Назад</span>
+        <span class="name">Оглавление</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-1.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">1. ИИ, ML и нейросети</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть 0 · старт с нуля</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-1.html">Глава 1 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+

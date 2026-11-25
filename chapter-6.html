@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 6. Данные, признаки и честная оценка — KANBook</title>
+<meta name="description" content="Как собрать данные, подготовить признаки, выбрать метрики и проверить KAN так, чтобы результат можно было считать честным.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 6 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-5.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-7.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">6. Данные и честная оценка</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html"><strong>6</strong></a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть II · От модели к продукту</p>
+      <h1>Данные, признаки и честная оценка</h1>
+      <p class="lead">
+        Модель не бывает «умной» сама по себе. Она настолько хороша, насколько
+        хороши данные и проверка. Здесь мы научимся собирать набор, делить его
+        без утечек, выбирать метрики и не обманывать себя.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 6</strong> из 9</span>
+        <span class="meta-chip">≈ 50 минут</span>
+        <span class="meta-chip">данные · метрики · протокол</span>
+        <span class="meta-chip">сложность: новичок</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Все модели неверны, но некоторые полезны.
+        <cite>Джордж Бокс</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Перед главой</p>
+        <p>
+          Достаточно уметь читать таблицу. Метрики, кросс-валидацию и утечки
+          объясним с нуля; математика почти не понадобится. Это самая «бытовая»
+          глава книги.
+        </p>
+      </div>
+      <h2 id="s6-1" data-num="6.1">Из задачи — в данные</h2>
+
+      <p>
+        Обучение с учителем начинается с таблицы: в строках — примеры, в
+        столбцах — признаки, и есть отдельный столбец с правильным ответом.
+        Формально это набор пар
+        <span class="math">D = {(x<sub>i</sub>, y<sub>i</sub>)}<sub>i=1</sub><sup>N</sup></span>,
+        где <span class="math">x<sub>i</sub> ∈ ℝ<sup>d</sup></span> — вектор
+        признаков, а <span class="math">y<sub>i</sub></span> — метка или число.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Понятие</th><th>Что это в таблице</th><th>Пример на Iris</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Пример (sample)</td><td>Одна строка</td><td>Один измеренный цветок</td></tr>
+            <tr><td>Признак (feature)</td><td>Столбец-вход</td><td>Длина чашелистика, см</td></tr>
+            <tr><td>Метка (label)</td><td>Столбец-ответ</td><td>Вид: setosa / versicolor / virginica</td></tr>
+            <tr><td>Выборка (dataset)</td><td>Все строки</td><td>150 цветков</td></tr>
+            <tr><td>Класс</td><td>Одно из значений метки</td><td>3 класса по 50 примеров</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Мы будем работать с классическим набором <strong>Iris</strong>: 150
+        цветков, четыре измерения, три вида. Он маленький, но настоящий: в нём
+        есть и разделимые классы, и трудные пограничные случаи. Этого достаточно,
+        чтобы пройти весь путь до обученной модели и не ждать полчаса на CPU.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">load_iris.py — читаем CSV без pandas</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">import csv
+
+FEATURES = ["sepal_length", "sepal_width", "petal_length", "petal_width"]
+
+rows = []
+with open("code/data/iris.csv", encoding="utf-8") as f:
+    for row in csv.DictReader(f):
+        x = [float(row[name]) for name in FEATURES]
+        rows.append((x, row["species"]))
+
+print(len(rows), rows[0])   # 150 ([5.1, 3.5, 1.4, 0.2], 'setosa')</code></pre>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Почему не «просто все данные»</p>
+        <p>
+          Если оценивать модель на тех же примерах, на которых она училась, вы
+          измеряете память, а не обобщение. Нужны три части: обучение,
+          валидация для выбора настроек и тест — только для финальной честной
+          цифры.
+        </p>
+      </div>
+
+      <h3 id="s6-1-1">Утечка данных</h3>
+
+      <p>
+        <strong>Утечка</strong> (data leakage) — это когда информация из теста
+        случайно попадает в обучение. Самые частые виды: нормализация по всему
+        набору до разделения, подбор гиперпараметров по тесту, дубликаты строк в
+        разных частях выборки, использование будущих данных для предсказания
+        прошлого.
+      </p>
+
+      <p>
+        Правило простое: <em>всё, что зависит от данных, настраивается только на
+        обучающей части</em>. Средние, минимумы, максимумы, словари категорий —
+        всё это фиксируется на train и затем применяется к val/test.
+      </p>
+      <h2 id="s6-2" data-num="6.2">Подготовка признаков</h2>
+
+      <p>
+        KAN с B-сплайнами определён на отрезке
+        <span class="math">[−1, 1]</span>, поэтому масштабирование входов —
+        не украшение, а условие корректной работы. Самое простое преобразование —
+        min-max:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          x′ = −1 + 2 ·
+          <span class="frac"><span class="num">x − min<sub>train</sub></span><span class="den">max<sub>train</sub> − min<sub>train</sub></span></span>
+        </div>
+        <div class="formula-caption"><strong>Min-max в [−1, 1].</strong> min и max считаются только по обучающей выборке.</div>
+      </div>
+
+      <p>
+        Альтернатива — стандартизация
+        <span class="math">x′ = (x − μ)/σ</span>. Она не ограничивает диапазон,
+        поэтому для KAN её обычно дополняют клиппингом или расширяют
+        <span class="math">grid_range</span>. Для Iris min-max удобнее: все
+        четыре признака попадают ровно в рабочую область сплайнов.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Шаг</th><th>Зачем</th><th>Частая ошибка</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Разделить train/val/test</td><td>Честная оценка</td><td>Сначала нормализовать всё, потом делить</td></tr>
+            <tr><td>Посчитать min/max на train</td><td>Параметры преобразования</td><td>Использовать min/max теста</td></tr>
+            <tr><td>Преобразовать все части</td><td>Одинаковый масштаб</td><td>Забыть преобразовать test</td></tr>
+            <tr><td>Обработать пропуски</td><td>Модель не любит NaN</td><td>Заполнять средним по всему набору</td></tr>
+            <tr><td>Закодировать категории</td><td>Числовой вход</td><td>Подбирать словарь на тесте</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">normalizer.py — fit только на train</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">def fit_normalizer(rows):
+    mins = [min(r[0][i] for r in rows) for i in range(4)]
+    maxs = [max(r[0][i] for r in rows) for i in range(4)]
+    return mins, maxs
+
+def normalize(x, mins, maxs):
+    return [-1 + 2 * (x[i] - mins[i]) / (maxs[i] - mins[i])
+            for i in range(len(x))]</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Выход за диапазон</p>
+        <p>
+          Если новый цветок имеет признак вне
+          <span class="math">[min<sub>train</sub>, max<sub>train</sub>]</span>,
+          min-max выведет его за <span class="math">[−1, 1]</span>. Для KAN это
+          означает экстраполяцию: сплайн там не обучен. В сервисе такие входы
+          нужно либо отклонять, либо явно ограничивать и предупреждать
+          пользователя.
+        </p>
+      </div>
+
+      <h2 id="s6-3" data-num="6.3">Метрики: что именно мы измеряем</h2>
+
+      <p>
+        Для классификации самая известная метрика — <strong>accuracy</strong>,
+        доля правильных ответов. Но одна цифра почти всегда что-то скрывает.
+        Начните с <strong>матрицы ошибок</strong>: строки — истинные классы,
+        столбцы — предсказанные.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th></th><th>pred: setosa</th><th>pred: versicolor</th><th>pred: virginica</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>true: setosa</th><td>10</td><td>0</td><td>0</td></tr>
+            <tr><th>true: versicolor</th><td>0</td><td>9</td><td>1</td></tr>
+            <tr><th>true: virginica</th><td>0</td><td>1</td><td>9</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Здесь accuracy = <span class="math">28/30 ≈ 0.933</span>, но видно, что
+        ошибки сосредоточены между versicolor и virginica — классами, которые
+        действительно похожи. Для каждого класса считают precision и recall:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          Precision = <span class="frac"><span class="num">TP</span><span class="den">TP + FP</span></span>,
+          &nbsp;&nbsp;
+          Recall = <span class="frac"><span class="num">TP</span><span class="den">TP + FN</span></span>,
+          &nbsp;&nbsp;
+          F<sub>1</sub> = <span class="frac"><span class="num">2 · P · R</span><span class="den">P + R</span></span>
+        </div>
+        <div class="formula-caption"><strong>Точность, полнота, F₁.</strong> Считаются для каждого класса, затем усредняются (macro).</div>
+      </div>
+
+      <p>
+        <strong>Precision</strong> отвечает на вопрос «если модель сказала
+        „versicolor“, как часто она права?». <strong>Recall</strong> — «какую
+        долю настоящих versicolor она нашла?». F₁ — их гармоническое среднее,
+        удобное, когда нужен баланс.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Задача</th><th>Основные метрики</th><th>Когда accuracy обманывает</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Классификация</td><td>Accuracy, precision, recall, F₁, ROC-AUC</td><td>Сильный дисбаланс классов</td></tr>
+            <tr><td>Регрессия</td><td>MSE, RMSE, MAE, R²</td><td>MSE чувствительна к выбросам</td></tr>
+            <tr><td>Вероятности</td><td>Log-loss (кросс-энтропия), калибровка</td><td>Высокая accuracy при плохих вероятностях</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Всегда нужен baseline</p>
+        <p>
+          Сравнивайте не с нулём, а с простым ориентиром: предсказание самого
+          частого класса, логистическая регрессия, маленький MLP. Если KAN
+          обыгрывает baseline на одном split — это ещё не результат; нужна
+          кросс-валидация и несколько seed.
+        </p>
+      </div>
+      <h2 id="s6-4" data-num="6.4">Кросс-валидация и протокол эксперимента</h2>
+
+      <p>
+        Один split из 150 примеров слишком шумный: одна ошибка на тесте из 30
+        меняет accuracy на 3.3 процентных пункта. Поэтому используют
+        <strong>k-фолдовую кросс-валидацию</strong>: данные делят на
+        <span class="math">k</span> частей, по очереди каждую делают тестом, а
+        остальные — обучением. Итог — среднее и разброс.
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          ACC<sub>CV</sub> =
+          <span class="frac"><span class="num">1</span><span class="den">k</span></span>
+          <span class="big-op">Σ<sub>j=1</sub><sup>k</sup></span>
+          ACC<sub>j</sub>
+          &nbsp;&nbsp;±&nbsp;&nbsp;
+          <span class="math">std(ACC<sub>1..k</sub>)</span>
+        </div>
+        <div class="formula-caption"><strong>Кросс-валидация.</strong> Среднее по фолдам и стандартное отклонение — честнее одной цифры.</div>
+      </div>
+
+      <p>
+        Для классификации используют <strong>стратифицированные</strong> фолды:
+        доли классов в каждом фолде сохраняются. Иначе может оказаться, что в
+        одном тесте вообще нет редкого класса.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Часть данных</th><th>Для чего</th><th>Сколько раз смотрим</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Train</td><td>Обучение весов</td><td>Много</td></tr>
+            <tr><td>Validation / CV</td><td>Выбор гиперпараметров, ранняя остановка</td><td>Много</td></tr>
+            <tr><td>Test</td><td>Финальная оценка</td><td>Один раз</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Подглядывание в тест</p>
+        <p>
+          Если вы подбираете learning rate, число эпох и архитектуру по тесту,
+          тест превращается в валидацию и перестаёт быть независимым. Его
+          единственная задача — дать честную оценку уже выбранной модели.
+        </p>
+      </div>
+
+      <p>
+        Воспроизводимость начинается с фиксации seed, версии кода и параметров
+        преобразований. В отчёте пишите не только accuracy, но и:
+      </p>
+
+      <ul>
+        <li>размер выборки и число классов;</li>
+        <li>метрику на train, CV и test;</li>
+        <li>разброс по фолдам или seed;</li>
+        <li>время обучения и инференса;</li>
+        <li>baseline, с которым сравниваете.</li>
+      </ul>
+
+      <h2 id="s6-5" data-num="6.5">Iris: что известно до обучения</h2>
+
+      <p>
+        Прежде чем запускать KAN, посмотрим на данные. Четыре признака, 150
+        примеров, по 50 на класс. Простой baseline «всегда setosa» даёт 33.3%
+        accuracy; «всегда самый частый класс» — тоже 33.3%, потому что классы
+        сбалансированы.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Признак</th><th>Диапазон в данных, см</th><th>Что важно</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Длина чашелистика</td><td>4.3 – 7.9</td><td>Перекрывается у всех классов</td></tr>
+            <tr><td>Ширина чашелистика</td><td>2.0 – 4.4</td><td>Слабо разделяет versicolor и virginica</td></tr>
+            <tr><td>Длина лепестка</td><td>1.0 – 6.9</td><td>Сильный признак</td></tr>
+            <tr><td>Ширина лепестка</td><td>0.1 – 2.5</td><td>Почти идеально отделяет setosa</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Наша обученная KAN <span class="math">4 → 3</span> с 111 параметрами
+        показывает <strong>95.3% ± 2.7%</strong> в 5-фолдовой CV. На одном
+        стратифицированном split 80/20 она дала 30/30, но это не «100% навсегда»:
+        на другом разбиении результат будет ниже. Именно поэтому в книге и в
+        демо мы приводим обе цифры.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Как читать такие числа</p>
+        <p>
+          95% на Iris — это нормальный результат для модели с 111 параметрами.
+          Он не означает, что модель «понимает ботанику». Он означает, что на
+          этих четырёх измерениях и этом наборе данных она улавливает
+          закономерность. Для реальной задачи нужны новые данные, проверка
+          домена и отдельный разговор о рисках.
+        </p>
+      </div>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 680 220" role="img" aria-label="Схема разделения данных на обучение, валидацию и тест">
+            <rect x="20" y="70" width="360" height="52" rx="9" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <rect x="390" y="70" width="120" height="52" rx="9" fill="var(--accent-2-soft)" stroke="var(--accent-2)"/>
+            <rect x="520" y="70" width="120" height="52" rx="9" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+
+            <text x="200" y="101" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="var(--accent)">Train · 60%</text>
+            <text x="450" y="101" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="var(--accent-2)">Validation · 20%</text>
+            <text x="580" y="101" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="600" fill="var(--muted)">Test · 20%</text>
+
+            <text x="200" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">учим веса</text>
+            <text x="450" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">выбираем настройки</text>
+            <text x="580" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">смотрим один раз</text>
+
+            <text x="340" y="190" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">Для кросс-валидации train/validation многократно перестраиваются</text>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 6.1.</strong> Тест не участвует ни в обучении, ни в выборе гиперпараметров.</figcaption>
+      </div>
+      <h2 id="s6-6" data-num="6.6">Упражнения</h2>
+
+      <ol>
+        <li>
+          Почему min/max для нормализации нельзя считать по всему набору, включая
+          тест?
+        </li>
+        <li>
+          По матрице ошибок из раздела 6.3 посчитайте precision, recall и F₁ для
+          класса versicolor. Чему равна accuracy?
+        </li>
+        <li>
+          Модель показала 30/30 на отложенной выборке из 30 примеров. Почему
+          нельзя утверждать, что её точность равна 100%?
+        </li>
+        <li>
+          Какой baseline разумно взять для Iris и какой результат считать
+          «лучше случайного»?
+        </li>
+        <li>
+          Приведите три примера утечки данных, которых не было в тексте.
+        </li>
+        <li>
+          Зачем нужны и валидация, и тест? Можно ли обойтись одним?
+        </li>
+        <li>
+          Какие метрики выбрать, если классы сильно несбалансированы?
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            Потому что тогда параметры преобразования «увидят» тест. Это утечка:
+            модель косвенно получает информацию о распределении тестовых данных.
+            min/max фиксируются на train и применяются к остальным частям.
+          </li>
+          <li>
+            Для versicolor: TP = 9, FP = 1 (virginica, названная versicolor),
+            FN = 1 (versicolor, названный virginica). Precision = 9/10 = 0.9,
+            recall = 9/10 = 0.9, F₁ = 0.9. Accuracy = 28/30 ≈ 0.933.
+          </li>
+          <li>
+            Тридцать примеров — маленькая выборка; одна ошибка сдвигает оценку
+            на 3.3 п.п. Кроме того, это один конкретный split. Нужны
+            кросс-валидация, несколько seed и, в идеале, внешний тест.
+          </li>
+          <li>
+            «Всегда самый частый класс» даёт 33.3%. Разумный ориентир — заметно
+            выше 33% и выше простой логистической регрессии; на Iris 90–96%
+            уже хороший результат для компактной модели.
+          </li>
+          <li>
+            Например: заполнение пропусков средним по всему набору; отбор
+            признаков по корреляции со всей меткой; дубликаты одного и того же
+            объекта в train и test; использование будущих продаж для прогноза
+            прошлых.
+          </li>
+          <li>
+            Валидация нужна для выбора настроек и ранней остановки, тест — для
+            финальной независимой оценки. Если настраивать по тесту, он
+            перестаёт быть независимым, и оценка завышается.
+          </li>
+          <li>
+            Accuracy может быть высокой при бесполезной модели. Нужны
+            precision/recall/F₁ по классам, balanced accuracy, ROC-AUC или PR-AUC
+            в зависимости от задачи и цены ошибок.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s6-7" data-num="6.7">Итоги главы</h2>
+
+      <ul>
+        <li>
+          Данные — это таблица «примеры × признаки + метка»; качество модели
+          ограничено качеством данных и протокола проверки.
+        </li>
+        <li>
+          Нормализация и любые преобразования настраиваются только на train;
+          иначе возникает утечка.
+        </li>
+        <li>
+          Accuracy — лишь одна метрика; матрица ошибок, precision, recall и F₁
+          показывают, где именно модель ошибается.
+        </li>
+        <li>
+          Кросс-валидация и несколько seed дают честную оценку с разбросом;
+          тест смотрят один раз.
+        </li>
+        <li>
+          Iris — маленький, но настоящий набор: baseline 33.3%, наша KAN даёт
+          95.3% ± 2.7% в CV.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          Теперь у нас есть данные, метрики и протокол. В главе 7 соберём KAN
+          <span class="math">4 → 3</span>, обучим её на Iris, сохраним веса и
+          подключим к живому демо, которым можно пользоваться.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-5.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">5. KAN на практике</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-7.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">7. Реальная KAN на Iris</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть II · глава 6 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-7.html">Глава 7 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+
+
+

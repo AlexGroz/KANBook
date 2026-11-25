@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 2. Математический фундамент — KANBook</title>
+<meta name="description" content="Матрицы и тензоры, производные и градиент, вероятность и кросс-энтропия, градиентный спуск, SGD и Adam — математический минимум для нейросетей и KAN.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 2 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-1.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-3.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">2. Математический фундамент</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html"><strong>2</strong></a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть I · Основы</p>
+      <h1>Математический фундамент: векторы, градиенты, оптимизация</h1>
+      <p class="lead">
+        Нейросеть — это функция с параметрами. Чтобы её обучить, нужно понять,
+        как менять параметры, а для этого — что такое производная. Здесь мы
+        собираем минимальный набор инструментов: матрицы, правило цепочки,
+        вероятность и градиентный спуск. Ровно столько, сколько нужно, чтобы
+        понять MLP и KAN.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 2</strong> из 9</span>
+        <span class="meta-chip">≈ 60 минут</span>
+        <span class="meta-chip">математика · интерактив</span>
+        <span class="meta-chip">сложность: средняя</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Математика — это искусство давать одно и то же имя разным вещам.
+        <cite>Анри Пуанкаре</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Перед главой</p>
+        <p>
+          Достаточно арифметики и долей. Производную мы объясним с нуля в разделе
+          2.2 — даже если вы её знаете, проверьте пример с автомобилем: он
+          пригодится дальше. Формулы не нужно заучивать: важно понять смысл.
+        </p>
+      </div>
+
+      <h2 id="s2-1" data-num="2.1">Векторы, матрицы, тензоры</h2>
+
+      <p>
+        Всё, что делает нейросеть, — это последовательность операций над массивами
+        чисел. <strong>Скаляр</strong> — одно число, <strong>вектор</strong> —
+        упорядоченный набор чисел, <strong>матрица</strong> — таблица, а
+        <strong>тензор</strong> — обобщение на любое число измерений. Изображение
+        <span class="math">28×28</span> — матрица; пакет из 32 таких изображений —
+        тензор формы <span class="math">(32, 1, 28, 28)</span>.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Объект</th><th>Форма</th><th>Пример</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Скаляр</td><td><span class="math">()</span></td><td>Функция потерь <span class="math">L = 0.42</span></td></tr>
+            <tr><td>Вектор</td><td><span class="math">(d,)</span></td><td>Признаки одного объекта</td></tr>
+            <tr><td>Матрица</td><td><span class="math">(m, d)</span></td><td>Веса слоя: <span class="math">m</span> выходов, <span class="math">d</span> входов</td></tr>
+            <tr><td>Пакет</td><td><span class="math">(B, d)</span></td><td><span class="math">B</span> объектов, обрабатываемых вместе</td></tr>
+            <tr><td>Тензор</td><td><span class="math">(B, C, H, W)</span></td><td>Пакет цветных изображений</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Главная операция — умножение матрицы на вектор. Если
+        <span class="math">W ∈ ℝ<sup>m×d</sup></span> и
+        <span class="math">x ∈ ℝ<sup>d</sup></span>, то
+        <span class="math">y = Wx ∈ ℝ<sup>m</sup></span>, причём
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          y<sub>i</sub> = <span class="big-op">Σ<sub>j=1</sub><sup>d</sup></span>
+          W<sub>ij</sub> x<sub>j</sub>
+        </div>
+        <div class="formula-caption"><strong>Матрично-векторное произведение.</strong> Каждая строка матрицы — это «детектор» одного выхода.</div>
+      </div>
+
+      <p>
+        Именно так выглядит линейный слой: <span class="math">y = Wx + b</span>.
+        Пакет векторов обрабатывается одной операцией: если
+        <span class="math">X ∈ ℝ<sup>B×d</sup></span>, то
+        <span class="math">Y = XW<sup>T</sup> + b</span>, где
+        <span class="math">b</span> прибавляется к каждой строке. Это удобно и
+        для вычислений, и для записи: одна и та же формула описывает обработку
+        тысячи примеров.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Маленький пример</p>
+        <p>
+          Пусть <span class="math">W = [[1, 2, 3], [4, 5, 6]]</span>, а
+          <span class="math">x = [1, 0, −1]</span>. Тогда
+          <span class="math">Wx = [1·1 + 2·0 + 3·(−1), 4·1 + 5·0 + 6·(−1)] = [−2, −2]</span>.
+          Проверьте это вручную — такие упражнения лучше всего проясняют, что
+          происходит внутри слоя.
+        </p>
+      </div>
+
+      <p>
+        Для измерения «длины» вектора и расстояния между векторами используют
+        нормы. Нам понадобятся две:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          ‖x‖<sub>2</sub> = √( <span class="big-op">Σ<sub>i</sub></span> x<sub>i</sub><sup>2</sup> )
+          &nbsp;&nbsp;&nbsp;
+          ‖x‖<sub>1</sub> = <span class="big-op">Σ<sub>i</sub></span> |x<sub>i</sub>|
+        </div>
+        <div class="formula-caption"><strong>Нормы L₂ и L₁.</strong> L₂ — евклидова длина; L₁ порождает разреженные решения.</div>
+      </div>
+
+      <p>
+        Скалярное произведение <span class="math">⟨x, y⟩ = Σ x<sub>i</sub> y<sub>i</sub></span>
+        измеряет согласованность направлений, а косинусная близость
+        <span class="math">⟨x, y⟩ / (‖x‖<sub>2</sub>‖y‖<sub>2</sub>)</span> не зависит
+        от длины векторов. Эти конструкции встретятся в функциях потерь, в
+        регуляризации и в анализе того, что выучила сеть.
+      </p>
+
+      <p>
+        В KAN матрица весов заменяется матрицей функций: вместо
+        <span class="math">W<sub>ij</sub> · x<sub>j</sub></span> считается
+        <span class="math">φ<sub>ij</sub>(x<sub>j</sub>)</span>. Линейная алгебра
+        остаётся языком описания, но «умножение» становится применением функции.
+        Об этом — в главе 4.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">shape_demo.py — формы решают всё</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">import torch
+
+W = torch.tensor([[1., 2., 3.],
+                  [4., 5., 6.]])      # (2, 3)
+x = torch.tensor([1., 0., -1.])       # (3,)
+b = torch.tensor([0.5, -0.5])         # (2,)
+
+y = W @ x + b                          # (2,)
+print(y)                               # tensor([-1.5000, -2.5000])
+
+X = torch.randn(8, 3)                  # пакет из 8 векторов
+Y = X @ W.T + b                        # (8, 2)
+print(Y.shape)                         # torch.Size([8, 2])</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Практическое правило</p>
+        <p>
+          Большинство ошибок в нейросетевом коде — не в формулах, а в формах
+          тензоров. Если операция не сходится по размерностям, сначала выпишите
+          ожидаемые формы на бумаге, а уже потом ищите ошибку в коде.
+        </p>
+      </div>
+
+      <h3 id="s2-1-1">Производная на пальцах</h3>
+
+      <p>
+        Представьте автомобиль. Пусть за <span class="math">t</span> секунд он
+        проезжает <span class="math">s(t) = t<sup>2</sup></span> метров. Тогда:
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Время t, с</th><th>Путь s, м</th><th>Средняя скорость за следующую секунду</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>1</td><td>(4 − 1) / 1 = 3 м/с</td></tr>
+            <tr><td>2</td><td>4</td><td>(9 − 4) / 1 = 5 м/с</td></tr>
+            <tr><td>3</td><td>9</td><td>(16 − 9) / 1 = 7 м/с</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Средняя скорость на интервале — это изменение пути, делённое на
+        изменение времени. Если уменьшать интервал до нуля, средняя скорость
+        стремится к <strong>мгновенной</strong>. Эта мгновенная скорость и есть
+        производная: <span class="math">s′(t) = 2t</span>. В точке
+        <span class="math">t = 1</span> она равна 2 м/с, хотя средняя за
+        следующую секунду была 3 м/с.
+      </p>
+
+      <p>
+        В нейросети всё то же самое: параметр — «время», потеря — «путь».
+        Производная подсказывает, насколько изменится потеря, если чуть-чуть
+        сдвинуть параметр. Обучение делает маленький шаг в сторону уменьшения.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Если формула с lim пугает</p>
+        <p>
+          Читайте её как «мгновенная скорость» или «наклон касательной». Для
+          практики достаточно понимать смысл; точные вычисления за нас делает
+          автоматическое дифференцирование.
+        </p>
+      </div>
+
+      <h2 id="s2-2" data-num="2.2">Производная, градиент и правило цепочки</h2>
+
+      <p>
+        Производная отвечает на вопрос: «насколько изменится выход, если чуть-чуть
+        изменить вход?». Формально — это предел отношения приращений:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          f′(x) = lim<sub>h→0</sub>
+          <span class="frac"><span class="num">f(x + h) − f(x)</span><span class="den">h</span></span>
+        </div>
+        <div class="formula-caption"><strong>Производная.</strong> Локальная скорость изменения функции.</div>
+      </div>
+
+      <p>
+        У функции многих переменных есть <em>частные производные</em>: они измеряют
+        изменение по одной координате при фиксированных остальных. Например, для
+        <span class="math">f(x, y) = x<sup>2</sup>y + sin y</span>:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂f</span><span class="den">∂x</span></span> = 2xy,
+          &nbsp;&nbsp;
+          <span class="frac"><span class="num">∂f</span><span class="den">∂y</span></span> = x<sup>2</sup> + cos y
+        </div>
+        <div class="formula-caption"><strong>Частные производные.</strong> Дифференцируем по одной переменной, остальные считаем константами.</div>
+      </div>
+
+      <p>
+        Вектор из всех частных производных называется <strong>градиентом</strong>:
+        <span class="math">∇f = (∂f/∂x, ∂f/∂y)</span>. Он указывает направление
+        самого быстрого <em>роста</em> функции. Значит, чтобы уменьшить функцию,
+        нужно двигаться в противоположную сторону — отсюда и знак минус в
+        градиентном спуске.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Частая ошибка</p>
+        <p>
+          Градиент — это локальное направление, а не «дорога к глобальному
+          минимуму». На сложной поверхности он может вести в бок, к локальному
+          минимуму или к седловой точке. Именно поэтому обучение зависит от
+          начальных параметров и расписания шага.
+        </p>
+      </div>
+
+      <h3 id="s2-2-1">Правило цепочки</h3>
+
+      <p>
+        Нейросеть — это композиция функций, поэтому главный инструмент
+        дифференцирования — <strong>правило цепочки</strong>. Если
+        <span class="math">y = f(g(x))</span>, то
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">dy</span><span class="den">dx</span></span>
+          = f′(g(x)) · g′(x)
+        </div>
+        <div class="formula-caption"><strong>Правило цепочки.</strong> Производная внешней функции умножается на производную внутренней.</div>
+      </div>
+
+      <p>
+        Пример: <span class="math">h(x) = (3x<sup>2</sup> + 1)<sup>5</sup></span>.
+        Внешняя функция — пятая степень, внутренняя —
+        <span class="math">3x<sup>2</sup> + 1</span>. Тогда
+        <span class="math">h′(x) = 5(3x<sup>2</sup> + 1)<sup>4</sup> · 6x</span>.
+        Если функция зависит от нескольких промежуточных переменных, вклады
+        складываются:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">dz</span><span class="den">dx</span></span>
+          = <span class="frac"><span class="num">∂f</span><span class="den">∂u</span></span>
+          <span class="frac"><span class="num">du</span><span class="den">dx</span></span>
+          + <span class="frac"><span class="num">∂f</span><span class="den">∂v</span></span>
+          <span class="frac"><span class="num">dv</span><span class="den">dx</span></span>
+        </div>
+        <div class="formula-caption"><strong>Многомерная цепочка.</strong> Каждый путь от входа к выходу даёт свой множитель.</div>
+      </div>
+
+      <p>
+        Это и есть суть обратного распространения. Представим вычисление как граф:
+        <span class="math">x = 2</span>, <span class="math">u = 3x = 6</span>,
+        <span class="math">v = u<sup>2</sup> = 36</span>,
+        <span class="math">y = v + 1 = 37</span>. Обратный проход идёт от выхода к
+        входу и на каждом ребре умножает локальную производную:
+        <span class="math">dy/dv = 1</span>,
+        <span class="math">dv/du = 2u = 12</span>,
+        <span class="math">du/dx = 3</span>, итого
+        <span class="math">dy/dx = 1 · 12 · 3 = 36</span>. Ровно так же библиотеки
+        автоматического дифференцирования считают градиенты для миллионов
+        параметров.
+      </p>
+
+      <h3 id="s2-2-2">Градиент линейной регрессии</h3>
+
+      <p>
+        Разберём пример, который понадобится в главе 3. Модель
+        <span class="math">ŷ<sub>i</sub> = w x<sub>i</sub> + b</span>, потери —
+        средний квадрат:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          L(w, b) = <span class="frac"><span class="num">1</span><span class="den">N</span></span>
+          <span class="big-op">Σ<sub>i=1</sub><sup>N</sup></span>
+          (w x<sub>i</sub> + b − y<sub>i</sub>)<sup>2</sup>
+        </div>
+        <div class="formula-caption"><strong>MSE для линейной модели.</strong></div>
+      </div>
+
+      <p>
+        Дифференцируя по <span class="math">w</span> и <span class="math">b</span>,
+        получаем:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂L</span><span class="den">∂w</span></span>
+          = <span class="frac"><span class="num">2</span><span class="den">N</span></span>
+          <span class="big-op">Σ<sub>i</sub></span> (ŷ<sub>i</sub> − y<sub>i</sub>) x<sub>i</sub>,
+          &nbsp;&nbsp;
+          <span class="frac"><span class="num">∂L</span><span class="den">∂b</span></span>
+          = <span class="frac"><span class="num">2</span><span class="den">N</span></span>
+          <span class="big-op">Σ<sub>i</sub></span> (ŷ<sub>i</sub> − y<sub>i</sub>)
+        </div>
+        <div class="formula-caption"><strong>Градиент MSE.</strong> Ошибка каждого примера взвешивается его входом.</div>
+      </div>
+
+      <p>
+        Обратите внимание на структуру: градиент — это среднее от «ошибка × вход».
+        В нейросети на каждом слое появится такой же множитель, только вместо
+        <span class="math">x<sub>i</sub></span> будет локальная производная слоя.
+        Это наблюдение — половина понимания backprop.
+      </p>
+
+      <h2 id="s2-3" data-num="2.3">Вероятность и информация</h2>
+
+      <div class="callout note">
+        <p class="callout-title">Если вероятность — новое слово</p>
+        <p>
+          Вероятность — число от 0 до 1. Запись «0.8» означает «примерно 80
+          случаев из 100». Сумма вероятностей всех возможных классов равна 1.
+          Softmax ниже как раз превращает произвольные числа в такой набор.
+        </p>
+      </div>
+
+      <p>
+        Классификация — это не «угадывание метки», а оценка вероятностей. Модель
+        выдаёт числа (логиты), которые нужно превратить в распределение. Для
+        <span class="math">K</span> классов это делает <strong>softmax</strong>:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          p<sub>k</sub> =
+          <span class="frac"><span class="num">exp(z<sub>k</sub>)</span><span class="den">Σ<sub>j</sub> exp(z<sub>j</sub>)</span></span>,
+          &nbsp;&nbsp; k = 1…K
+        </div>
+        <div class="formula-caption"><strong>Softmax.</strong> Превращает произвольные числа в вероятности: все положительны и в сумме дают единицу.</div>
+      </div>
+
+      <p>
+        На практике из всех логитов вычитают максимум:
+        <span class="math">z<sub>k</sub> ← z<sub>k</sub> − max<sub>j</sub> z<sub>j</sub></span>.
+        Это не меняет результат математически, но спасает от переполнения
+        <span class="math">exp</span> при больших значениях.
+      </p>
+
+      <p>
+        Качество вероятностного прогноза измеряют <strong>кросс-энтропией</strong>.
+        Для одного примера с правильным классом <span class="math">y</span>:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          L<sub>CE</sub> = − log p<sub>y</sub>
+        </div>
+        <div class="formula-caption"><strong>Кросс-энтропия.</strong> Минимизировать её — то же самое, что максимизировать правдоподобие правильного ответа.</div>
+      </div>
+
+      <p>
+        В бинарном случае используется сигмоида
+        <span class="math">σ(z) = 1 / (1 + e<sup>−z</sup>)</span> и
+        бинарная кросс-энтропия:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          L<sub>BCE</sub> = −[ y log p + (1 − y) log(1 − p) ]
+        </div>
+        <div class="formula-caption"><strong>Бинарная кросс-энтропия.</strong> p — вероятность класса 1.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Задача</th><th>Выход модели</th><th>Функция потерь</th><th>Финальная активация</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Регрессия</td><td>Вещественное число</td><td>MSE или MAE</td><td>Нет (или линейная)</td></tr>
+            <tr><td>Бинарная классификация</td><td>Вероятность класса 1</td><td>BCE</td><td>Сигмоида</td></tr>
+            <tr><td>Многоклассовая</td><td>Распределение по K классам</td><td>Кросс-энтропия</td><td>Softmax</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Связь с теорией вероятностей глубже, чем кажется. Минимизация
+        кросс-энтропии эквивалентна максимизации правдоподобия данных при
+        выбранной модели, а MSE соответствует предположению о гауссовом шуме.
+        Выбор потерь — это, по сути, выбор вероятностной модели ошибок.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Связь с KAN</p>
+        <p>
+          KAN для классификации устроен так же, как MLP: последний слой даёт
+          логиты, к ним применяется softmax, обучаем кросс-энтропию. Меняется
+          только внутренняя архитектура. Поэтому вся вероятностная часть остаётся
+          без изменений.
+        </p>
+      </div>
+
+      <h2 id="s2-4" data-num="2.4">Оптимизация: как параметры находят минимум</h2>
+
+      <p>
+        У нас есть функция потерь <span class="math">L(θ)</span> и градиент
+        <span class="math">∇L(θ)</span>. Самый простой алгоритм — <strong>градиентный
+        спуск</strong>: сделать шаг против градиента.
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          θ<sub>t+1</sub> = θ<sub>t</sub> − η ∇L(θ<sub>t</sub>)
+        </div>
+        <div class="formula-caption"><strong>Градиентный спуск.</strong> η — скорость обучения (learning rate).</div>
+      </div>
+
+      <p>
+        Если считать градиент по всей выборке, шаг будет точным, но дорогим. На
+        практике используют <strong>мини-пакеты</strong>: градиент оценивают по
+        <span class="math">B</span> случайным примерам. Это
+        <strong>стохастический градиентный спуск</strong> (SGD). Оценка шумная, но
+        несмещённая, а шум иногда даже помогает выбраться из неудачных областей.
+      </p>
+
+      <p>
+        У чистого SGD есть проблема: в «оврагах» он колеблется поперёк узкого
+        направления и медленно движется вдоль него. <strong>Momentum</strong>
+        накапливает скорость:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          v<sub>t+1</sub> = β v<sub>t</sub> + (1 − β) ∇L(θ<sub>t</sub>),
+          &nbsp;&nbsp;
+          θ<sub>t+1</sub> = θ<sub>t</sub> − η v<sub>t+1</sub>
+        </div>
+        <div class="formula-caption"><strong>Momentum.</strong> β обычно 0.9: сглаживает колебания и ускоряет движение по устойчивым направлениям.</div>
+      </div>
+
+      <p>
+        <strong>Adam</strong> добавляет к этому адаптивный шаг для каждого параметра:
+        он хранит оценки первого и второго моментов градиента и нормирует шаг на
+        их величину.
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          m<sub>t</sub> = β<sub>1</sub>m<sub>t−1</sub> + (1 − β<sub>1</sub>)g<sub>t</sub>,
+          &nbsp;&nbsp;
+          v<sub>t</sub> = β<sub>2</sub>v<sub>t−1</sub> + (1 − β<sub>2</sub>)g<sub>t</sub><sup>2</sup>
+        </div>
+        <div class="formula-caption"><strong>Adam, моменты.</strong> m — сглаженный градиент, v — сглаженный квадрат градиента.</div>
+      </div>
+
+      <div class="formula">
+        <div class="formula-body">
+          m̂<sub>t</sub> = <span class="frac"><span class="num">m<sub>t</sub></span><span class="den">1 − β<sub>1</sub><sup>t</sup></span></span>,
+          &nbsp;&nbsp;
+          v̂<sub>t</sub> = <span class="frac"><span class="num">v<sub>t</sub></span><span class="den">1 − β<sub>2</sub><sup>t</sup></span></span>,
+          &nbsp;&nbsp;
+          θ<sub>t+1</sub> = θ<sub>t</sub> − η
+          <span class="frac"><span class="num">m̂<sub>t</sub></span><span class="den">√v̂<sub>t</sub> + ε</span></span>
+        </div>
+        <div class="formula-caption"><strong>Adam, шаг.</strong> Поправка на смещение важна на первых шагах; ε ≈ 10<sup>−8</sup> защищает от деления на ноль.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Понятие</th><th>Смысл</th><th>Типичные значения</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Batch size</td><td>Сколько примеров в одном шаге</td><td>32–256; для слабого ПК — 8–64</td></tr>
+            <tr><td>Learning rate</td><td>Размер шага</td><td>Adam: 1e−3; SGD: 1e−2…1e−1</td></tr>
+            <tr><td>Epoch</td><td>Один полный проход по обучающей выборке</td><td>10–1000+</td></tr>
+            <tr><td>Iteration</td><td>Один шаг оптимизатора по одному батчу</td><td>Зависит от размера данных</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Эпоха ≠ шаг</p>
+        <p>
+          Одна эпоха — это <span class="math">N/B</span> шагов. Если выборка
+          маленькая, эпох будет много, а шагов — мало. Смотрите на кривые потерь
+          по шагам, а не только по эпохам, иначе легко сделать неверный вывод о
+          скорости обучения.
+        </p>
+      </div>
+
+      <p>
+        Посмотрите на демонстрацию ниже. Это та же идея, что в формуле, но на
+        двумерной невыпуклой поверхности: видно и локальные минимумы, и влияние
+        слишком большого шага. Клик по карте задаёт начальную точку.
+      </p>
+
+      <div class="demo" data-demo="gd">
+        <div class="demo-head">
+          <span class="demo-title">Спуск по градиенту</span>
+          <span class="demo-tag">интерактив</span>
+        </div>
+        <div class="demo-body">
+          <canvas class="demo-canvas" width="640" height="380" aria-label="Карта функции потерь и траектория градиентного спуска"></canvas>
+          <div class="demo-controls">
+            <label class="control">
+              Скорость η
+              <input type="range" min="0.01" max="0.4" step="0.01" value="0.12">
+              <span data-lr-value>0.12</span>
+            </label>
+            <button class="btn-sm primary" type="button" data-action="step">Шаг</button>
+            <button class="btn-sm" type="button" data-action="run">Авто</button>
+            <button class="btn-sm" type="button" data-action="reset">Сброс</button>
+          </div>
+          <div class="demo-output">Кликните по карте, чтобы выбрать начальную точку.</div>
+        </div>
+      </div>
+
+      <div class="callout practice">
+        <p class="callout-title">Рабочий чек-лист</p>
+        <p>
+          Перед долгим обучением проверьте три вещи: (1) модель может переобучить
+          десять примеров до почти нулевой ошибки; (2) потери на обучении падают;
+          (3) скорость обучения не приводит к «взрыву» или «замиранию». Это
+          отсекает большинство ошибок ещё до экспериментов.
+        </p>
+      </div>
+
+      <h2 id="s2-5" data-num="2.5">Численная устойчивость</h2>
+
+      <p>
+        Математические формулы живут в идеальном мире, а вычисления — в
+        тридцатидвухбитных числах с конечным диапазоном. Три приёма спасают
+        практически любой нейросетевой код.
+      </p>
+
+      <ul>
+        <li>
+          <strong>Log-sum-exp.</strong> Вместо прямого
+          <span class="math">log Σ exp(z<sub>i</sub>)</span> считают
+          <span class="math">m + log Σ exp(z<sub>i</sub> − m)</span>, где
+          <span class="math">m = max z<sub>i</sub></span>. Это защищает от
+          переполнения и обнуления.
+        </li>
+        <li>
+          <strong>Клиппинг вероятностей.</strong> Перед логарифмом вероятности
+          ограничивают снизу малым числом, например
+          <span class="math">10<sup>−7</sup></span>, чтобы
+          <span class="math">log 0</span> не дал бесконечность.
+        </li>
+        <li>
+          <strong>Нормализация входов.</strong> Приводите признаки к разумному
+          масштабу: стандартизация (среднее 0, дисперсия 1) или min-max в
+          <span class="math">[−1, 1]</span>. Для KAN последнее особенно важно:
+          сплайны определены на ограниченном отрезке, и выход за него означает
+          экстраполяцию.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Почему это критично для KAN</p>
+        <p>
+          Слой KAN вычисляет базисные функции на сетке
+          <span class="math">[−1, 1]</span> (по умолчанию). Если входы имеют
+          масштаб в сотни, почти все значения окажутся за пределами сетки, и
+          модель будет работать в режиме экстраполяции. Нормализация данных —
+          не «улучшение», а обязательное условие корректного обучения.
+        </p>
+      </div>
+
+      <h2 id="s2-6" data-num="2.6">Упражнения</h2>
+
+      <ol>
+        <li>
+          Вычислите <span class="math">Wx</span> для
+          <span class="math">W = [[2, −1], [0, 3]]</span> и
+          <span class="math">x = (1, 4)</span>.
+        </li>
+        <li>
+          Найдите градиент <span class="math">f(x, y) = x<sup>2</sup>y + 3y</span>
+          в точке <span class="math">(2, 1)</span>.
+        </li>
+        <li>
+          Продифференцируйте <span class="math">f(x) = (2x − 1)<sup>4</sup></span>
+          по правилу цепочки.
+        </li>
+        <li>
+          Повторите вывод <span class="math">∂L/∂w</span> для MSE линейной
+          регрессии. Где в нём «прячется» правило цепочки?
+        </li>
+        <li>
+          Зачем в softmax вычитают максимум, если математически это ничего не
+          меняет?
+        </li>
+        <li>
+          Что произойдёт при скорости обучения <span class="math">η = 10</span> и
+          при <span class="math">η = 10<sup>−6</sup></span>? Опишите обе картины.
+        </li>
+        <li>
+          Почему для KAN нормализация входов в <span class="math">[−1, 1]</span>
+          важнее, чем для MLP?
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            <span class="math">Wx = (2·1 + (−1)·4, 0·1 + 3·4) = (−2, 12)</span>.
+          </li>
+          <li>
+            <span class="math">∂f/∂x = 2xy = 4</span>,
+            <span class="math">∂f/∂y = x<sup>2</sup> + 3 = 7</span>, значит
+            <span class="math">∇f = (4, 7)</span>.
+          </li>
+          <li>
+            Внешняя производная <span class="math">4(2x − 1)<sup>3</sup></span>,
+            внутренняя — <span class="math">2</span>. Итог:
+            <span class="math">8(2x − 1)<sup>3</sup></span>.
+          </li>
+          <li>
+            <span class="math">L = (1/N) Σ (ŷ − y)<sup>2</sup></span>. Производная
+            квадрата даёт <span class="math">2(ŷ − y)</span>, а производная
+            <span class="math">ŷ = wx + b</span> по <span class="math">w</span> —
+            множитель <span class="math">x</span>. Отсюда
+            <span class="math">(2/N) Σ (ŷ − y)x</span>.
+          </li>
+          <li>
+            Чтобы избежать переполнения <span class="math">exp(z)</span> при
+            больших логитах. Сдвиг на константу сокращается в числителе и
+            знаменателе, поэтому вероятности не меняются.
+          </li>
+          <li>
+            При <span class="math">η = 10</span> шаги огромны: потери «взрываются»
+            или скачут, параметры уходят в бесконечность. При
+            <span class="math">η = 10<sup>−6</sup></span> обучение почти стоит на
+            месте: до результата не хватит разумного числа шагов.
+          </li>
+          <li>
+            Сплайны KAN определены на конечном отрезке. За его пределами функция
+            экстраполируется полиномом и быстро уходит от правды; MLP же
+            формально определён на всей прямой, хотя качество вне обучающего
+            диапазона тоже не гарантируется.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s2-7" data-num="2.7">Итоги главы</h2>
+
+      <ul>
+        <li>
+          Матрица — это линейное отображение; слой нейросети записывается как
+          <span class="math">y = Wx + b</span>, а пакет — как
+          <span class="math">Y = XW<sup>T</sup> + b</span>.
+        </li>
+        <li>
+          Градиент указывает направление роста функции; обучение движется против
+          него. Правило цепочки позволяет считать производные через граф
+          вычислений.
+        </li>
+        <li>
+          Вероятностный выход получают через softmax или сигмоиду, а качество
+          измеряют кросс-энтропией; MSE — частный случай гауссовой модели ошибок.
+        </li>
+        <li>
+          SGD, momentum и Adam — практические варианты градиентного спуска;
+          скорость обучения и размер батча влияют на устойчивость не меньше, чем
+          архитектура.
+        </li>
+        <li>
+          Численная устойчивость и нормализация входов — не мелочи, особенно для
+          KAN, где сплайны живут на ограниченном отрезке.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          Теперь у нас есть все инструменты, чтобы собрать первую настоящую
+          нейросеть: перцептрон, скрытый слой, функцию активации и обратное
+          распространение. Этим и займёмся в главе 3.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-1.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">1. ИИ, машинное обучение и нейросети</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-3.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">3. От перцептрона к MLP</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть I «Основы» · глава 2 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-3.html">Глава 3 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>
+
+
+
+
+
+

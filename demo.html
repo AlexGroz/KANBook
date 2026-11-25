@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Живая KAN: классификатор ирисов — KANBook</title>
+<meta name="description" content="Обученная KAN 4 → 3 классифицирует ирисы по четырём измерениям. Инференс в браузере, без сервера.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к демонстрации</a>
+
+<header class="topbar">
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+    <span class="brand-sub">живая модель</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-7.html">
+      <span class="btn-label">Глава 7</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="demo-page" id="main">
+  <section class="demo-hero">
+    <p class="eyebrow">Живая модель · Iris</p>
+    <h1>KAN-классификатор, обученный на реальных данных</h1>
+    <p>
+      Перед вами не картинка и не «псевдомодель»: это обученная KAN
+      <span class="math">4 → 3</span> с 111 параметрами. Она определяет вид
+      ириса по четырём измерениям. Все вычисления — прямо в браузере, без
+      сервера и без интернета.
+    </p>
+    <p>
+      Меняйте ползунки или выберите готовый пример. Модель обучилась на 120
+      цветках, а на 30 отложенных показала точность 100% для этого split;
+      честная кросс-валидация даёт <strong>95.3% ± 2.7%</strong>.
+    </p>
+  </section>
+
+  <div class="demo-grid">
+    <section class="panel" aria-labelledby="inputs-title">
+      <h2 id="inputs-title">Входные признаки</h2>
+      <p class="panel-sub">Четыре измерения цветка в сантиметрах. Значения ограничены диапазоном обучающих данных.</p>
+      <form id="iris-form" autocomplete="off"></form>
+      <div class="preset-row" id="presets" aria-label="Готовые примеры"></div>
+    </section>
+
+    <section class="panel" aria-labelledby="result-title">
+      <h2 id="result-title">Предсказание KAN</h2>
+      <p class="panel-sub">Вероятности трёх классов после softmax.</p>
+      <div class="result-badge" id="result-badge" aria-live="polite">Загрузка модели…</div>
+      <div id="probs"></div>
+      <dl class="model-stats" id="model-stats"></dl>
+      <p class="demo-note">
+        Учебная модель на маленьком классическом датасете. Не используйте её
+        как ботаническую или медицинскую рекомендацию.
+      </p>
+    </section>
+  </div>
+
+  <noscript>
+    <p class="no-js-note">Для интерактивного предсказания нужен JavaScript.</p>
+  </noscript>
+  <section class="panel" style="margin-top:20px" aria-labelledby="inside-title">
+    <h2 id="inside-title">Что внутри модели</h2>
+    <p class="panel-sub">Один слой KAN: у каждого ребра «признак → класс» своя обучаемая функция.</p>
+    <div class="formula" style="margin-top:10px">
+      <div class="formula-body">
+        z<sub>k</sub>(x) =
+        <span class="big-op">Σ<sub>i=1</sub><sup>4</sup></span>
+        φ<sub>k,i</sub>(x<sub>i</sub>) + b<sub>k</sub>,
+        &nbsp;&nbsp;
+        p<sub>k</sub> = softmax(z)<sub>k</sub>
+      </div>
+      <div class="formula-caption"><strong>Модель.</strong> φ<sub>k,i</sub> — B-сплайн степени 3 на сетке G = 5 плюс базовая SiLU.</div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Параметр</th><th>Значение</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Архитектура</td><td>KAN 4 → 3 (один слой)</td></tr>
+          <tr><td>Базис</td><td>B-сплайны, G = 5, k = 3 → 8 функций на ребро</td></tr>
+          <tr><td>Параметры</td><td>3 · 4 · (8 + 1) + 3 = 111</td></tr>
+          <tr><td>Обучение</td><td>120 примеров, softmax + кросс-энтропия, Adam</td></tr>
+          <tr><td>Контроль</td><td>30 отложенных примеров + 5-фолдовая CV</td></tr>
+          <tr><td>Результат</td><td>CV 95.3% ± 2.7%; на данном split — 30/30</td></tr>
+          <tr><td>Размер весов</td><td>около 4 КБ JSON</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="demo-note">
+      Хотите обучить заново или изменить данные? В книге есть главы
+      <a href="chapter-6.html">6</a> и <a href="chapter-7.html">7</a>,
+      а скрипт запускается одной командой:
+      <code>python3 code/iris_kan_pure.py --cv --export</code>.
+    </p>
+  </section>
+</main>
+
+<footer class="book-footer">
+  <div>KANBook · живая модель · Iris KAN 4 → 3</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-7.html">Как она обучена</a>
+    <span class="sep">·</span>
+    <a href="chapter-1.html">С начала</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+<script src="assets/iris_model.js"></script>
+<script src="assets/demo-iris.js"></script>
+</body>
+</html>
