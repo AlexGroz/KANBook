@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 4. Теорема Колмогорова–Арнольда и архитектура KAN — KANBook</title>
+<meta name="description" content="Теорема Колмогорова–Арнольда, представление функций, B-сплайны, слой KAN, число параметров, grid extension и интерпретируемость.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 4 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-3.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-5.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">4. Теорема и архитектура KAN</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html"><strong>4</strong></a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть I · Основы</p>
+      <h1>Теорема Колмогорова–Арнольда и архитектура KAN</h1>
+      <p class="lead">
+        В 1957 году Колмогоров показал, что любую непрерывную (без разрывов)
+        функцию многих переменных можно собрать из функций одной переменной и
+        сложения. Спустя почти семьдесят лет эта теорема превратилась в
+        архитектуру нейросети. Здесь мы разберём, как именно.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 4</strong> из 9</span>
+        <span class="meta-chip">≈ 80 минут</span>
+        <span class="meta-chip">теория · формулы · интерактив</span>
+        <span class="meta-chip">сложность: продвинутая</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Ничто так не практично, как хорошая теория.
+        <cite>Курт Левин</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Перед главой</p>
+        <p>
+          Нужны только производные из 2.2 и идея MLP из 3.2. Формулы здесь — не
+          для заучивания. Порядок внутри главы: сначала 4.1–4.2 (идея), затем
+          4.3 (детали базиса). Если тяжело — перечитайте, а не пропускайте.
+        </p>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">KAN без формул</p>
+        <p>
+          Представьте, что каждый вход соединён с каждым выходом не числом, а
+          маленькой кривой. Кривая обучается вместе с сетью. Выход складывает
+          вклады всех входящих кривых. Это и есть KAN. Теорема Колмогорова–
+          Арнольда говорит, что так можно собрать любую непрерывную функцию.
+        </p>
+      </div>
+
+      <h2 id="s4-1" data-num="4.1">Теорема Колмогорова–Арнольда</h2>
+
+      <p>
+        В 1900 году Давид Гильберт поставил тринадцатую проблему: можно ли
+        выразить решение уравнения седьмой степени через суперпозицию (вложение
+        функций друг в друга) функций двух переменных? Вопрос казался
+        техническим, но касался фундаментальной вещи — «размерности» функции.
+        В 1957 году Андрей Колмогоров и Владимир Арнольд показали нечто
+        неожиданное: для представления непрерывной функции многих переменных
+        достаточно функций <em>одной</em> переменной и операции сложения.
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          f(x<sub>1</sub>, …, x<sub>n</sub>) =
+          <span class="big-op">Σ<sub>q=0</sub><sup>2n</sup></span>
+          Φ<sub>q</sub>(
+          <span class="big-op">Σ<sub>p=1</sub><sup>n</sup></span>
+          φ<sub>q,p</sub>(x<sub>p</sub>)
+          )
+        </div>
+        <div class="formula-caption"><strong>Теорема Колмогорова–Арнольда.</strong> Любая непрерывная f на [0,1]ⁿ представима такой суммой из 2n+1 слагаемых.</div>
+      </div>
+
+      <p>
+        Разберём формулу по частям. Внутри — <span class="math">n</span> функций
+        одной переменной, по одной на каждый вход. Снаружи — суммирование и ещё
+        одна одномерная функция <span class="math">Φ<sub>q</sub></span>. Всего
+        получается <span class="math">2n+1</span> «каналов», каждый из которых
+        складывает <span class="math">n</span> одномерных вкладов и пропускает
+        сумму через свою функцию.
+      </p>
+
+      <p>
+        Самое сильное в теореме — универсальность внутренних функций. Их можно
+        выбрать <em>заранее</em>, независимо от <span class="math">f</span>;
+        от конкретной функции зависят только внешние
+        <span class="math">Φ<sub>q</sub></span>. Это выглядит как обещание:
+        выучите несколько одномерных функций — и получите любую многомерную.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Важная оговорка</p>
+        <p>
+          Теорема гарантирует существование, но не обещает гладкости. Внутренние
+          функции в конструкции Колмогорова–Арнольда могут быть крайне
+          нерегулярными, а их вид зависит от <span class="math">f</span> сложным
+          образом. Известны результаты (Арнольд, Витушкин), показывающие, что
+          гладкого аналога теоремы в общем случае нет. Поэтому «взять гладкие
+          сплайны и точно реализовать теорему» нельзя — но можно использовать её
+          как архитектурную идею.
+        </p>
+      </div>
+
+      <p>
+        Именно так и поступает KAN: он не пытается воспроизвести патологическую
+        конструкцию из доказательства. Он берёт <em>структуру</em> — одномерные
+        функции на рёбрах и суммы в узлах — и делает её обучаемой, заменяя
+        теоретические функции гибкими сплайнами. Теорема объясняет, почему такая
+        структура вообще способна быть выразительной.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Почему это не противоречит MLP</p>
+        <p>
+          MLP тоже универсален, но по-другому: он приближает функцию суммой
+          «горбов» в многомерном пространстве. KAN собирает функцию из одномерных
+          «кирпичиков» и сложений. Оба класса выразительны; различаются
+          индуктивные смещения — то, какие функции выучить легче.
+        </p>
+      </div>
+
+      <h2 id="s4-2" data-num="4.2">От теоремы к слою KAN</h2>
+
+      <p>
+        Посмотрим на формулу теоремы как на нейросеть. Внутренняя сумма
+        <span class="math">Σ<sub>p</sub> φ<sub>q,p</sub>(x<sub>p</sub>)</span>
+        — это узел, который складывает вклады рёбер. Внешняя
+        <span class="math">Φ<sub>q</sub></span> — функция на выходном ребре. Если
+        разрешить произвольное число слоёв и произвольную ширину, получится общий
+        слой KAN:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          x<sup>(l+1)</sup><sub>j</sub> =
+          <span class="big-op">Σ<sub>i=1</sub><sup>n<sub>l</sub></sup></span>
+          φ<sub>l,j,i</sub>( x<sup>(l)</sup><sub>i</sub> ),
+          &nbsp;&nbsp; j = 1…n<sub>l+1</sub>
+        </div>
+        <div class="formula-caption"><strong>Слой KAN.</strong> Матрица функций Φ<sub>l</sub> размера n<sub>l+1</sub> × n<sub>l</sub>; узел только суммирует.</div>
+      </div>
+
+      <p>
+        Вся сеть — композиция таких слоёв:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          KAN(x) = ( Φ<sub>L−1</sub> ∘ Φ<sub>L−2</sub> ∘ … ∘ Φ<sub>0</sub> )(x)
+        </div>
+        <div class="formula-caption"><strong>KAN глубины L.</strong> Каждая Φ<sub>l</sub> — матрица обучаемых одномерных функций.</div>
+      </div>
+
+      <p>
+        Теорема Колмогорова–Арнольда — это частный случай: два слоя, ширина
+        <span class="math">2n+1</span> и фиксированные внутренние функции. KAN
+        обобщает её, делая функции обучаемыми и позволяя добавлять глубину.
+        Глубина важна: композиция позволяет представлять функции, которые
+        «в один слой» требуют огромной ширины.
+      </p>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 640 300" role="img" aria-label="Слой KAN: входы, обучаемые функции на рёбрах, суммы в выходах">
+            <text x="18" y="26" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="var(--muted)" letter-spacing="1.2">ВХОД</text>
+            <text x="556" y="26" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="var(--muted)" letter-spacing="1.2">ВЫХОД</text>
+
+            <g fill="var(--surface-2)" stroke="var(--accent-2)" stroke-width="1.3">
+              <circle cx="66" cy="80" r="16"/><circle cx="66" cy="150" r="16"/><circle cx="66" cy="220" r="16"/>
+              <circle cx="560" cy="112" r="17"/><circle cx="560" cy="192" r="17"/>
+            </g>
+
+            <g font-family="Georgia, serif" font-size="13" font-style="italic" text-anchor="middle" fill="var(--ink)">
+              <text x="66" y="85">x₁</text><text x="66" y="155">x₂</text><text x="66" y="225">x₃</text>
+              <text x="560" y="117">Σ</text><text x="560" y="197">Σ</text>
+            </g>
+
+            <g font-family="Georgia, serif" font-size="13" font-style="italic" fill="var(--ink-soft)">
+              <text x="590" y="117">y₁</text><text x="590" y="197">y₂</text>
+            </g>
+
+            <g fill="none" stroke="var(--accent)" stroke-width="1.3" opacity="0.5">
+              <path d="M82 80 Q 320 52, 543 104"/>
+              <path d="M82 80 Q 320 130, 543 184"/>
+              <path d="M82 150 Q 320 110, 543 108"/>
+              <path d="M82 150 Q 320 180, 543 190"/>
+              <path d="M82 220 Q 320 150, 543 112"/>
+              <path d="M82 220 Q 320 240, 543 198"/>
+            </g>
+
+            <g fill="none" stroke="var(--accent-2)" stroke-width="1.8" stroke-linecap="round">
+              <path d="M300 44 q 10 -14 20 0 t 20 0"/>
+              <path d="M300 124 q 10 -14 20 0 t 20 0"/>
+              <path d="M300 214 q 10 -14 20 0 t 20 0"/>
+            </g>
+
+            <g font-family="Georgia, serif" font-size="12" font-style="italic" fill="var(--accent)" text-anchor="middle">
+              <text x="190" y="86">φ₁₁(x₁)</text>
+              <text x="190" y="140">φ₁₂(x₂)</text>
+              <text x="190" y="204">φ₂₃(x₃)</text>
+            </g>
+
+            <text x="320" y="286" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)" text-anchor="middle">
+              каждое ребро i → j — своя функция φⱼᵢ; узел j складывает все вклады
+            </text>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 4.1.</strong> Один слой KAN. В отличие от MLP, здесь нет матрицы скалярных весов: её место занимает матрица функций.</figcaption>
+      </div>
+
+      <p>
+        Если бы мы хранили каждую <span class="math">φ</span> как произвольную
+        таблицу значений, слой был бы необучаемым и огромным. Нужна компактная
+        параметризация. Её дают сплайны.
+      </p>
+      <p>
+        Если бы мы хранили каждую <span class="math">φ</span> как произвольную
+        таблицу значений, слой был бы необучаемым и огромным. Нужна компактная
+        параметризация. Её дают сплайны.
+      </p>
+
+      <h2 id="s4-3" data-num="4.3">B-сплайны: компактный язык функций</h2>
+
+      <p>
+        Сплайн — это кусочно-полиномиальная функция. Отрезок
+        <span class="math">[−1, 1]</span> разбивается на <span class="math">G</span>
+        интервалов точками <span class="math">t<sub>0</sub> &lt; t<sub>1</sub> &lt; … &lt; t<sub>G</sub></span>
+        (узлами). На каждом интервале функция — многочлен степени не выше
+        <span class="math">k</span>, а в узлах выполнены условия гладкости.
+      </p>
+
+      <p>
+        Удобный базис для таких функций — <strong>B-сплайны</strong>. Они
+        определяются рекурсивно (формула Кокса–де Бура):
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          B<sub>i,0</sub>(x) = 1, если t<sub>i</sub> ≤ x &lt; t<sub>i+1</sub>, иначе 0
+        </div>
+        <div class="formula-caption"><strong>Базис нулевой степени.</strong> Ступеньки на каждом интервале.</div>
+      </div>
+
+      <div class="formula">
+        <div class="formula-body">
+          B<sub>i,k</sub>(x) =
+          <span class="frac"><span class="num">x − t<sub>i</sub></span><span class="den">t<sub>i+k</sub> − t<sub>i</sub></span></span>
+          B<sub>i,k−1</sub>(x) +
+          <span class="frac"><span class="num">t<sub>i+k+1</sub> − x</span><span class="den">t<sub>i+k+1</sub> − t<sub>i+1</sub></span></span>
+          B<sub>i+1,k−1</sub>(x)
+        </div>
+        <div class="formula-caption"><strong>Рекурсия Кокса–де Бура.</strong> Если знаменатель равен нулю, соответствующее слагаемое считается нулевым.</div>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Как читать рекурсию</p>
+        <p>
+          Саму рекурсию не нужно запоминать. Поймите итог: базисные функции
+          фиксированы, а обучаются только коэффициенты перед ними. Код в главе 5
+          реализует эту рекурсию за вас; при желании разберите её по шагам.
+        </p>
+      </div>
+
+      <p>
+        Готовый сплайн — это линейная комбинация базисных функций:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          φ(x) = <span class="big-op">Σ<sub>i</sub></span>
+          c<sub>i</sub> B<sub>i,k</sub>(x)
+        </div>
+        <div class="formula-caption"><strong>Сплайн.</strong> Обучаются коэффициенты c<sub>i</sub>; сам базис фиксирован.</div>
+      </div>
+
+      <p>
+        У B-сплайнов три свойства, которые делают их идеальными для нейросети.
+        Во-первых, <strong>локальность</strong>: каждая базисная функция
+        отлична от нуля лишь на <span class="math">k+1</span> соседних интервалах,
+        поэтому изменение одного коэффициента меняет функцию только локально.
+        Во-вторых, <strong>разбиение единицы</strong>:
+        <span class="math">Σ<sub>i</sub> B<sub>i,k</sub>(x) = 1</span> на всём
+        отрезке. В-третьих, они неотрицательны, что делает вычисления устойчивыми.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Сколько базисных функций?</p>
+        <p>
+          На сетке из <span class="math">G</span> интервалов и степени
+          <span class="math">k</span> получается ровно
+          <span class="math">G + k</span> базисных функций. Это число встретится
+          в формулах параметров: на каждое ребро KAN приходится
+          <span class="math">G + k</span> коэффициентов сплайна. При
+          <span class="math">G = 5</span> и <span class="math">k = 3</span> это 8
+          коэффициентов.
+        </p>
+      </div>
+
+      <div class="demo" data-demo="spline">
+        <div class="demo-head">
+          <span class="demo-title">B-сплайны и аппроксимация</span>
+          <span class="demo-tag">интерактив</span>
+        </div>
+        <div class="demo-body">
+          <canvas class="demo-canvas" width="700" height="320" aria-label="Базисные функции B-сплайна и приближение целевой функции"></canvas>
+          <div class="demo-controls">
+            <label class="control">
+              Степень k
+              <select data-spline-degree>
+                <option value="1">1 — линейный</option>
+                <option value="2">2 — квадратичный</option>
+                <option value="3" selected>3 — кубический</option>
+              </select>
+            </label>
+            <label class="control">
+              Сетка G
+              <input type="range" data-spline-grid min="2" max="10" step="1" value="5">
+              <span data-grid-value>5</span>
+            </label>
+            <button class="btn-sm" type="button" data-action="target">Другая функция</button>
+          </div>
+          <div class="demo-output"></div>
+          <div class="demo-legend">
+            <span style="color:var(--accent)"><span class="legend-swatch"></span> сумма сплайнов</span>
+            <span style="color:#c9c4b8"><span class="legend-swatch"></span> цель</span>
+            <span style="color:var(--accent-2)"><span class="legend-swatch"></span> базисные функции</span>
+          </div>
+        </div>
+      </div>
+
+      <p>
+        Подвигайте <span class="math">G</span> и <span class="math">k</span>.
+        Видно, как рост числа базисных функций повышает точность: ошибка
+        аппроксимации гладкой функции убывает как
+        <span class="math">O(h<sup>k+1</sup>)</span>, где
+        <span class="math">h = 2/G</span> — шаг сетки. Именно эту ручку точности
+        KAN использует при обучении.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Реализации немного различаются</p>
+        <p>
+          В демонстрации выше используются «зажатые» узлы: <span class="math">k+1</span>
+          копия на каждом конце. В оригинальной реализации KAN (pykan) применяют
+          равномерную сетку, расширенную на <span class="math">k</span> узлов
+          влево и вправо; число базисных функций остаётся тем же —
+          <span class="math">G + k</span>. На результат это не влияет, но при
+          чтении чужого кода полезно смотреть, как именно построен knot vector.
+        </p>
+      </div>
+
+      <h2 id="s4-4" data-num="4.4">Устройство слоя KAN</h2>
+
+      <p>
+        Осталось соединить сплайны с архитектурой. В оригинальной работе каждое
+        ребро KAN описывается суммой двух частей — гладкой базовой активации и
+        сплайна:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          φ<sub>j,i</sub>(x) = w<sub>b,ji</sub> · SiLU(x) +
+          w<sub>s,ji</sub>
+          <span class="big-op">Σ<sub>k=1</sub><sup>G+k</sup></span>
+          c<sub>ji,k</sub> B<sub>k</sub>(x)
+        </div>
+        <div class="formula-caption"><strong>Функция ребра.</strong> Первое слагаемое — глобальный тренд, второе — локальная поправка.</div>
+      </div>
+
+      <p>
+        Зачем нужна базовая часть? Если стартовать только со сплайна, при
+        инициализации коэффициенты малы и функция ребра почти нулевая — сигнал
+        через сеть не проходит. SiLU с весом <span class="math">w<sub>b</sub> = 1</span>
+        даёт нормальный поток градиента, а сплайн постепенно добавляет нужную
+        форму. Коэффициенты <span class="math">c</span> инициализируют маленькими
+        случайными числами, например <span class="math">N(0, 0.1)</span>.
+        Множитель <span class="math">w<sub>s</sub></span> можно «вложить» в
+        коэффициенты <span class="math">c</span>, поэтому отдельным параметром он
+        не считается.
+      </p>
+
+      <p>
+        Слой целиком:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          x′<sub>j</sub> =
+          <span class="big-op">Σ<sub>i=1</sub><sup>n<sub>in</sub></sup></span>
+          φ<sub>j,i</sub>(x<sub>i</sub>) + b<sub>j</sub>,
+          &nbsp;&nbsp; j = 1…n<sub>out</sub>
+        </div>
+        <div class="formula-caption"><strong>Слой KAN с базовой активацией.</strong> Смещение b<sub>j</sub> необязательно, но удобно.</div>
+      </div>
+
+      <p>
+        Посчитаем параметры. На каждое ребро приходится
+        <span class="math">G+k</span> коэффициентов сплайна, один базовый вес
+        <span class="math">w<sub>b</sub></span> и масштаб
+        <span class="math">w<sub>s</sub></span>. Итого:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          P<sub>слой</sub> = n<sub>in</sub> · n<sub>out</sub> · (G + k + 1)
+          + n<sub>out</sub>
+        </div>
+        <div class="formula-caption"><strong>Параметры слоя KAN.</strong> Множитель (G + k + 1) и есть цена «функции вместо числа».</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Архитектура</th><th>MLP</th><th>KAN (G=5, k=3)</th><th>Отношение</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>2 → 5 → 1</td><td>21</td><td>141</td><td>6.7×</td></tr>
+            <tr><td>10 → 10 → 1</td><td>121</td><td>1 001</td><td>8.3×</td></tr>
+            <tr><td>10 → 10 → 10 → 1</td><td>231</td><td>1 911</td><td>8.3×</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        На первый взгляд KAN проигрывает в разы. Но сравнивать надо не число
+        параметров, а число параметров при <em>одинаковой точности</em>. На
+        гладких функциях KAN часто достигает той же ошибки меньшей сетью, и
+        итоговая модель оказывается компактнее. На больших задачах с шумными
+        данными преимущество исчезает — мы увидим это в главе 5.
+      </p>
+
+      <h3 id="s4-4-1">Пакетная реализация</h3>
+
+      <p>
+        На практике все базисные функции считаются сразу. Для батча из
+        <span class="math">B</span> примеров получается тензор
+        <span class="math">B × n<sub>in</sub> × (G+k)</span>, а коэффициенты
+        хранятся в тензоре
+        <span class="math">n<sub>out</sub> × n<sub>in</sub> × (G+k)</span>.
+        Выход — свёртка по последним двум осям:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">kan_layer_forward.py — суть без деталей</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python"># basis:  (B, n_in, G + k)  — значения базисных функций
+# coef:   (n_out, n_in, G + k)
+# x:      (B, n_in)
+spline = torch.einsum("bik,oik->bo", basis, coef)
+base = F.silu(x) @ base_weight.T          # (B, n_out)
+out = base + spline + bias                # (B, n_out)</code></pre>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Цена вычислений</p>
+        <p>
+          MLP на этом слое делает <span class="math">O(B n<sub>in</sub>n<sub>out</sub>)</span>
+          умножений. KAN — <span class="math">O(B n<sub>in</sub>n<sub>out</sub>(G+k))</span>,
+          то есть в <span class="math">G+k</span> раз больше. При
+          <span class="math">G=5, k=3</span> это восьмикратная разница. Именно
+          поэтому KAN выигрывает не «всегда», а там, где малая сеть уже решает
+          задачу.
+        </p>
+      </div>
+
+      <h2 id="s4-5" data-num="4.5">Сетка, ширина, глубина</h2>
+
+      <p>
+        У KAN есть дополнительная ручка, которой нет у MLP: разрешение сетки
+        <span class="math">G</span>. Это одновременно и число параметров, и
+        «мелкость» функции. Разумная стратегия — начинать с грубой сетки, а потом
+        уточнять её.
+      </p>
+
+      <p>
+        <strong>Grid extension</strong> работает так. Сначала сеть обучается при
+        малом <span class="math">G</span>. Затем строится более тонкая сетка
+        <span class="math">G′ &gt; G</span>. Чтобы не потерять выученную функцию,
+        новые коэффициенты подбираются так, чтобы новая кривая совпала со старой
+        в точках сетки:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          c′ = arg min<sub>c′</sub>
+          <span class="big-op">Σ<sub>s</sub></span>
+          ( <span class="big-op">Σ<sub>j</sub></span> c′<sub>j</sub> B′<sub>j</sub>(x<sub>s</sub>)
+          − φ<sub>старый</sub>(x<sub>s</sub>) )<sup>2</sup>
+        </div>
+        <div class="formula-caption"><strong>Уточнение сетки.</strong> Это задача наименьших квадратов; при вставке узлов её можно решить и точно.</div>
+      </div>
+
+      <p>
+        После этого обучение продолжается уже на новой сетке. Такой
+        coarse-to-fine подход стабильнее, чем сразу обучать очень тонкий сплайн:
+        сначала находится правильная форма, затем уточняются детали.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Параметр</th><th>Смысл</th><th>Разумный старт</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Ширина слоя</td><td>Сколько функций сходится в узле</td><td>Часто уже MLP; теоретический ориентир — 2n+1</td></tr>
+            <tr><td>Глубина</td><td>Сколько слоёв композиции</td><td>1–3 для игрушечных задач</td></tr>
+            <tr><td>G</td><td>Число интервалов сетки</td><td>3–10, затем grid extension</td></tr>
+            <tr><td>k</td><td>Степень сплайна</td><td>3 (кубический)</td></tr>
+            <tr><td>Оптимизатор</td><td>Правило шага</td><td>Adam → LBFGS на финальной стадии</td></tr>
+            <tr><td>Регуляризация</td><td>Разреживание рёбер</td><td>L1 на коэффициенты, если нужна интерпретация</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Почему не «просто больше нейронов»</p>
+        <p>
+          У MLP рост ширины добавляет нейроны, и каждый из них влияет на всё
+          выходное пространство. У KAN рост <span class="math">G</span> добавляет
+          локальные детали, не разрушая глобальную форму. Это другое индуктивное
+          смещение: KAN «предпочитает» гладкие функции с локальной структурой.
+        </p>
+      </div>
+
+      <h2 id="s4-6" data-num="4.6">Интерпретируемость: от сети к формуле</h2>
+
+      <p>
+        Главное обещание KAN — не только точность, но и возможность прочитать
+        выученное. Пайплайн состоит из четырёх шагов.
+      </p>
+
+      <ol>
+        <li>
+          <strong>Обучить</strong> сеть с L1-регуляризацией на коэффициенты
+          сплайнов. Штраф заставляет большинство рёбер стать почти нулевыми.
+        </li>
+        <li>
+          <strong>Разредить.</strong> Удалить рёбра с малым вкладом и
+          перенормировать оставшиеся. Сеть становится графом с небольшим числом
+          связей.
+        </li>
+        <li>
+          <strong>Символизировать.</strong> Для каждого оставшегося ребра
+          подобрать простую функцию из библиотеки: <span class="math">x</span>,
+          <span class="math">x<sup>2</sup></span>, <span class="math">sin</span>,
+          <span class="math">exp</span>, <span class="math">tanh</span>,
+          <span class="math">|x|</span>, <span class="math">log</span>.
+        </li>
+        <li>
+          <strong>Проверить.</strong> Сравнить предсказания символической модели с
+          исходной сетью и с данными. Если расхождение велико — вернуться к шагу 1.
+        </li>
+      </ol>
+
+      <p>
+        Символизация ребра — это подбор аффинных параметров:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          φ(x) ≈ a · f( b x + c ) + d
+        </div>
+        <div class="formula-caption"><strong>Символическая регрессия ребра.</strong> Для каждой функции f из библиотеки подбираются a, b, c, d; выбирается лучшая по ошибке и сложности.</div>
+      </div>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 640 300" role="img" aria-label="Разреженная KAN-сеть с подписями функций на рёбрах">
+            <g fill="var(--surface-2)" stroke="var(--accent-2)" stroke-width="1.3">
+              <circle cx="80" cy="100" r="18"/><circle cx="80" cy="200" r="18"/>
+              <circle cx="320" cy="80" r="18"/><circle cx="320" cy="160" r="18"/>
+              <circle cx="560" cy="130" r="20"/>
+            </g>
+
+            <g font-family="Georgia, serif" font-size="14" font-style="italic" fill="var(--ink)" text-anchor="middle">
+              <text x="80" y="105">x</text><text x="80" y="205">y</text>
+              <text x="320" y="85">h₁</text><text x="320" y="165">h₂</text>
+              <text x="560" y="136">Σ</text>
+            </g>
+
+            <g fill="none" stroke="var(--accent)" stroke-width="1.8" opacity="0.8">
+              <path d="M98 100 Q 210 70, 302 78"/>
+              <path d="M98 200 Q 210 176, 302 164"/>
+              <path d="M338 84 Q 450 100, 540 124"/>
+              <path d="M338 156 Q 450 150, 540 134"/>
+            </g>
+
+            <g fill="none" stroke="var(--line-strong)" stroke-width="1.4" stroke-dasharray="5 5" opacity="0.5">
+              <path d="M98 100 Q 210 140, 302 156"/>
+              <path d="M98 200 Q 210 120, 302 84"/>
+            </g>
+
+            <g font-family="Georgia, serif" font-size="13" font-style="italic" fill="var(--accent-2)" text-anchor="middle">
+              <text x="200" y="66">sin(3x)</text>
+              <text x="200" y="190">x²</text>
+              <text x="440" y="92">exp</text>
+              <text x="440" y="168">tanh</text>
+            </g>
+
+            <g font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">
+              <text x="320" y="270" text-anchor="middle">пунктир — отрезанные рёбра; сплошные — оставшиеся функции</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 4.2.</strong> После разреживания KAN читается как небольшая формула: несколько функций на рёбрах и суммы в узлах.</figcaption>
+      </div>
+
+      <p>
+        В оригинальной работе так удалось восстановить, например,
+        <span class="math">exp(sin(πx) + y<sup>2</sup>)</span>: сеть выучила
+        внутренние <span class="math">sin</span> и квадрат, а внешнюю
+        экспоненту. Это не гарантия для любой задачи, но сильная демонстрация
+        того, что архитектура располагает к «формулоподобным» решениям.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Ограничения интерпретации</p>
+        <p>
+          Символизация зависит от библиотеки функций и допуска по ошибке.
+          Разные наборы кандидатов могут дать разные «формулы» с похожей
+          точностью. Кроме того, разреживание может ухудшить прогноз.
+          Интерпретируемость — это исследовательский процесс, а не кнопка
+          «показать формулу».
+        </p>
+      </div>
+
+      <h2 id="s4-7" data-num="4.7">Упражнения</h2>
+
+      <ol>
+        <li>
+          Сколько слагаемых даёт теорема Колмогорова–Арнольда для
+          <span class="math">n = 3</span>? А для <span class="math">n = 10</span>?
+        </li>
+        <li>
+          Что именно гарантирует теорема и чего она не гарантирует? Назовите два
+          ограничения.
+        </li>
+        <li>
+          Сколько базисных функций у сплайна при <span class="math">G = 8</span>,
+          <span class="math">k = 3</span>? Сколько параметров у слоя KAN
+          <span class="math">3 → 4</span> с такими настройками?
+        </li>
+        <li>
+          Зачем нужна базовая активация SiLU, если есть сплайн? Что будет, если
+          инициализировать все коэффициенты сплайна нулями, а базовые веса —
+          единицами?
+        </li>
+        <li>
+          Во сколько раз слой KAN дороже слоя MLP при
+          <span class="math">n<sub>in</sub> = n<sub>out</sub> = 10</span>,
+          <span class="math">G = 5</span>, <span class="math">k = 3</span>?
+        </li>
+        <li>
+          Почему обучение начинают с грубой сетки, а потом уточняют её? Что
+          произойдёт, если сразу взять <span class="math">G = 100</span>?
+        </li>
+        <li>
+          Как L1-регуляризация помогает перейти от сети к формуле?
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            <span class="math">2n + 1</span>: для <span class="math">n = 3</span>
+            — 7 слагаемых, для <span class="math">n = 10</span> — 21.
+          </li>
+          <li>
+            Гарантирует существование точного представления непрерывной функции
+            через одномерные функции и сложение. Не гарантирует гладкости
+            внутренних функций и не даёт практического способа их найти.
+          </li>
+          <li>
+            Базисных функций <span class="math">G + k = 11</span>. Параметры слоя:
+            <span class="math">3·4·(8+3+1) + 4 = 144 + 4 = 148</span>.
+          </li>
+          <li>
+            Базовая SiLU обеспечивает ненулевой сигнал и устойчивый градиент в
+            начале обучения. Если все коэффициенты нулевые, а базовые веса
+            единицы, скрытые нейроны могут оказаться одинаковыми — понадобится
+            случайная инициализация, чтобы нарушить симметрию. Небольшой
+            случайный шум в коэффициентах решает эту проблему.
+          </li>
+          <li>
+            В <span class="math">G + k = 8</span> раз: примерно
+            <span class="math">64 · 10 · 10 · 8</span> операций против
+            <span class="math">64 · 10 · 10</span>.
+          </li>
+          <li>
+            Грубая сетка сначала находит глобальную форму функции, а уточнение
+            добавляет детали, не ломая её. При <span class="math">G = 100</span>
+            параметров и вычислений становится намного больше, а оптимизация —
+            менее устойчивой; к тому же данных может не хватить для такой
+            детализации.
+          </li>
+          <li>
+            L1 штрафует абсолютные величины коэффициентов, поэтому многие рёбра
+            «схлопываются» к нулю. После этого остаётся небольшой граф, который
+            можно проверять и символизировать.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s4-8" data-num="4.8">Итоги главы</h2>
+
+      <ul>
+        <li>
+          Теорема Колмогорова–Арнольда представляет непрерывную функцию многих
+          переменных суммой <span class="math">2n+1</span> композиций одномерных
+          функций.
+        </li>
+        <li>
+          KAN превращает эту структуру в архитектуру: функции живут на рёбрах,
+          узлы только суммируют, а сеть строится композицией слоёв.
+        </li>
+        <li>
+          Каждая функция ребра параметризуется B-сплайном: базис фиксирован,
+          обучаются <span class="math">G + k</span> коэффициентов.
+        </li>
+        <li>
+          Базовая SiLU даёт устойчивый старт, сплайн — локальную гибкость; вместе
+          они образуют <span class="math">φ(x) = w<sub>b</sub>SiLU(x) + spline(x)</span>.
+        </li>
+        <li>
+          KAN дороже MLP на параметр, но может быть компактнее при той же
+          точности, а разреживание и символизация делают его читаемым.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          Теория закончилась. В главе 5 мы реализуем слой KAN на PyTorch, обучим
+          его на игрушечных функциях, сравним с MLP и попробуем прочитать
+          выученное.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-3.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">3. От перцептрона к MLP</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-5.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">5. KAN на практике</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть I «Основы» · глава 4 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-5.html">Глава 5 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

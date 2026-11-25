@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 3. От перцептрона к MLP — KANBook</title>
+<meta name="description" content="Перцептрон и проблема XOR, скрытые слои, функции активации, обратное распространение, переобучение и теорема об универсальной аппроксимации.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 3 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-2.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-4.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">3. От перцептрона к MLP</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html"><strong>3</strong></a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть I · Основы</p>
+      <h1>От перцептрона к MLP: как нейросеть учится</h1>
+      <p class="lead">
+        Один нейрон умеет проводить прямую. Скрытый слой превращает прямую в
+        произвольную границу. Обратное распространение говорит, как подкрутить
+        миллионы весов. Эта глава — фундамент, на котором стоит всё остальное,
+        включая KAN.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 3</strong> из 9</span>
+        <span class="meta-chip">≈ 70 минут</span>
+        <span class="meta-chip">теория · демонстрации · код</span>
+        <span class="meta-chip">сложность: средняя</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Вопрос не в том, может ли машина мыслить, а в том, может ли она учиться
+        на своём опыте.
+        <cite>По мотивам идей Алана Тьюринга и Фрэнка Розенблатта</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Перед главой</p>
+        <p>
+          Нужны глава 1 и матрицы из 2.1. Если слова «перцептрон» и «MLP» вам
+          незнакомы — это нормально: начнём с одного нейрона и постепенно дойдём
+          до обратного распространения. Код в конце — обязательная практика:
+          сначала можно разобрать формулы, затем запустить пример.
+        </p>
+      </div>
+
+      <h2 id="s3-1" data-num="3.1">Перцептрон: один нейрон и одна прямая</h2>
+
+      <p>
+        Искусственный нейрон — это взвешенная сумма входов плюс смещение, после
+        которой применяется нелинейность. В исходном перцептроне Розенблатта
+        нелинейность была ступенькой:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          z = <span class="big-op">Σ<sub>i</sub></span> w<sub>i</sub>x<sub>i</sub> + b,
+          &nbsp;&nbsp;
+          ŷ = 1, если z ≥ 0, иначе 0
+        </div>
+        <div class="formula-caption"><strong>Перцептрон.</strong> Один нейрон делит пространство входов гиперплоскостью w·x + b = 0.</div>
+      </div>
+
+      <p>
+        В двумерном случае это просто прямая. Нейрон относит точку к классу 1,
+        если она лежит по одну сторону прямой, и к классу 0 — если по другую.
+        Обучение по Розенблатту подправляет веса только тогда, когда ответ
+        неверен:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          w ← w + η (y − ŷ) x,
+          &nbsp;&nbsp;
+          b ← b + η (y − ŷ)
+        </div>
+        <div class="formula-caption"><strong>Правило перцептрона.</strong> Если ответ верен, ничего не меняется; если нет — веса сдвигаются в сторону правильного класса.</div>
+      </div>
+
+      <p>
+        Для линейно разделимых данных этот алгоритм гарантированно сходится за
+        конечное число шагов — это теорема о сходимости перцептрона. Но именно
+        слово «линейно» и стало ловушкой.
+      </p>
+
+      <h3 id="s3-1-1">Проблема XOR</h3>
+
+      <p>
+        Рассмотрим четыре точки в вершинах единичного квадрата. Класс 1 — точки
+        <span class="math">(0,1)</span> и <span class="math">(1,0)</span>, класс 0
+        — <span class="math">(0,0)</span> и <span class="math">(1,1)</span>. Это
+        функция «исключающее ИЛИ»: результат равен 1, только если входы разные.
+      </p>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 560 320" role="img" aria-label="Четыре точки XOR, которые нельзя разделить одной прямой">
+            <g stroke="var(--line)" stroke-width="1">
+              <path d="M60 260 H510 M60 260 V30"/>
+              <path d="M170 260 V30 M280 260 V30 M390 260 V30" opacity="0.5"/>
+              <path d="M60 150 H510 M60 40 H510" opacity="0.5"/>
+            </g>
+            <path d="M60 260 H512 M60 260 V28" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+            <path d="M504 256 L514 260 L504 264 M56 36 L60 26 L64 36" fill="none" stroke="var(--muted)" stroke-width="1.4"/>
+
+            <g stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="6 6" opacity="0.5">
+              <path d="M20 90 L540 240"/>
+            </g>
+
+            <circle cx="60" cy="260" r="9" fill="var(--accent-2)"/>
+            <circle cx="500" cy="40" r="9" fill="var(--accent-2)"/>
+            <circle cx="60" cy="40" r="9" fill="var(--accent)"/>
+            <circle cx="500" cy="260" r="9" fill="var(--accent)"/>
+
+            <g font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-soft)">
+              <text x="46" y="286">(0, 0)</text>
+              <text x="470" y="286">(1, 0)</text>
+              <text x="34" y="30">(0, 1)</text>
+              <text x="470" y="30">(1, 1)</text>
+              <text x="520" y="280">x₁</text>
+              <text x="40" y="22">x₂</text>
+            </g>
+
+            <g font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">
+              <text x="300" y="305" text-anchor="middle">никакая одна прямая не отделяет оранжевые точки от зелёных</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 3.1.</strong> Классы XOR расположены «по диагонали»: линейная граница здесь невозможна.</figcaption>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>x₁</th><th>x₂</th><th>y = XOR</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>0</td><td>0</td><td>0</td></tr>
+            <tr><td>0</td><td>1</td><td>1</td></tr>
+            <tr><td>1</td><td>0</td><td>1</td></tr>
+            <tr><td>1</td><td>1</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Минский и Пейперт в 1969 году показали, что однослойный перцептрон не
+        может вычислить XOR. Это ограничение стало одним из аргументов против
+        нейросетей на десятилетия. Решение оказалось простым: добавить скрытый
+        слой, который сам создаёт новые признаки.
+      </p>
+
+      <p>
+        Например, пусть скрытые нейроны вычисляют «ИЛИ» и «И»:
+        <span class="math">h<sub>1</sub> = step(x<sub>1</sub> + x<sub>2</sub> − 0.5)</span>,
+        <span class="math">h<sub>2</sub> = step(x<sub>1</sub> + x<sub>2</sub> − 1.5)</span>.
+        Тогда <span class="math">y = step(h<sub>1</sub> − h<sub>2</sub> − 0.5)</span>
+        даёт ровно XOR: для <span class="math">(1,1)</span> оба скрытых нейрона
+        активны и вычитаются, для <span class="math">(1,0)</span> и
+        <span class="math">(0,1)</span> активен только первый, для
+        <span class="math">(0,0)</span> — ни один.
+      </p>
+
+      <div class="callout">
+        <p class="callout-title">Геометрическая интуиция</p>
+        <p>
+          Скрытый слой переводит входы в новое пространство, где задача становится
+          линейно разделимой. Глубина — это последовательность таких преобразований.
+          Чем больше слоёв, тем более сложные «перегибы» пространства доступны
+          сети.
+        </p>
+      </div>
+
+      <h2 id="s3-2" data-num="3.2">Многослойный перцептрон</h2>
+
+      <p>
+        <strong>MLP</strong> (multi-layer perceptron) — это стопка полносвязных
+        слоёв, каждый из которых заканчивается нелинейностью. Для двух скрытых
+        слоёв и линейного выхода:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          h<sub>1</sub> = σ(W<sub>1</sub>x + b<sub>1</sub>),
+          &nbsp;&nbsp;
+          h<sub>2</sub> = σ(W<sub>2</sub>h<sub>1</sub> + b<sub>2</sub>),
+          &nbsp;&nbsp;
+          ŷ = W<sub>3</sub>h<sub>2</sub> + b<sub>3</sub>
+        </div>
+        <div class="formula-caption"><strong>Прямой проход MLP.</strong> Каждый слой — линейное преобразование плюс нелинейность.</div>
+      </div>
+
+      <p>
+        <strong>Ширина</strong> — число нейронов в слое, <strong>глубина</strong> —
+        число слоёв. Число параметров слоя с <span class="math">n<sub>in</sub></span>
+        входами и <span class="math">n<sub>out</sub></span> выходами равно
+        <span class="math">n<sub>in</sub>n<sub>out</sub> + n<sub>out</sub></span>:
+        матрица весов плюс смещения. Для сети
+        <span class="math">2 → 4 → 1</span> это
+        <span class="math">(2·4 + 4) + (4·1 + 1) = 17</span> параметров.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Зачем нужна нелинейность</p>
+        <p>
+          Если убрать <span class="math">σ</span>, композиция линейных слоёв
+          останется линейной: <span class="math">W<sub>2</sub>(W<sub>1</sub>x) = (W<sub>2</sub>W<sub>1</sub>)x</span>.
+          Сеть любой глубины схлопнется в одно линейное преобразование и не сможет
+          выучить даже XOR. Нелинейность — не украшение, а источник выразительности.
+        </p>
+      </div>
+
+      <h3 id="s3-2-1">Функции активации</h3>
+
+      <p>
+        Исторически использовали сигмоиду и гиперболический тангенс, затем пришли
+        ReLU и его гладкие варианты. У каждой — свой профиль градиента.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Функция</th><th>Формула</th><th>Диапазон</th><th>Производная</th><th>Особенность</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Сигмоида</td>
+              <td><span class="math">1/(1+e<sup>−x</sup>)</span></td>
+              <td><span class="math">(0, 1)</span></td>
+              <td><span class="math">σ(1−σ)</span></td>
+              <td>Насыщается, градиент исчезает</td>
+            </tr>
+            <tr>
+              <td>tanh</td>
+              <td><span class="math">(e<sup>x</sup>−e<sup>−x</sup>)/(e<sup>x</sup>+e<sup>−x</sup>)</span></td>
+              <td><span class="math">(−1, 1)</span></td>
+              <td><span class="math">1−tanh<sup>2</sup>x</span></td>
+              <td>Центрирована вокруг нуля</td>
+            </tr>
+            <tr>
+              <td>ReLU</td>
+              <td><span class="math">max(0, x)</span></td>
+              <td><span class="math">[0, ∞)</span></td>
+              <td>0 или 1</td>
+              <td>Дёшева, но «мёртвые» нейроны</td>
+            </tr>
+            <tr>
+              <td>LeakyReLU</td>
+              <td><span class="math">max(0.01x, x)</span></td>
+              <td><span class="math">(−∞, ∞)</span></td>
+              <td>0.01 или 1</td>
+              <td>Лечит мёртвые нейроны</td>
+            </tr>
+            <tr>
+              <td>GELU</td>
+              <td><span class="math">x·Φ(x)</span></td>
+              <td><span class="math">≈(−0.17, ∞)</span></td>
+              <td>Гладкая</td>
+              <td>Стандарт в трансформерах</td>
+            </tr>
+            <tr>
+              <td>SiLU</td>
+              <td><span class="math">x·σ(x)</span></td>
+              <td><span class="math">≈(−0.28, ∞)</span></td>
+              <td>Гладкая</td>
+              <td>Базовая активация в KAN</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="demo" data-demo="activation">
+        <div class="demo-head">
+          <span class="demo-title">Функции активации</span>
+          <span class="demo-tag">интерактив</span>
+        </div>
+        <div class="demo-body">
+          <canvas class="demo-canvas" width="640" height="280" aria-label="График выбранной функции активации"></canvas>
+          <div class="demo-controls">
+            <div class="seg" role="group" aria-label="Выбор функции активации">
+              <button type="button" data-fn="sigmoid" aria-pressed="false">σ</button>
+              <button type="button" data-fn="tanh" aria-pressed="false">tanh</button>
+              <button type="button" data-fn="relu" aria-pressed="false">ReLU</button>
+              <button type="button" data-fn="leaky" aria-pressed="false">Leaky</button>
+              <button type="button" data-fn="gelu" aria-pressed="false">GELU</button>
+              <button type="button" data-fn="silu" aria-pressed="true">SiLU</button>
+            </div>
+          </div>
+          <div class="demo-output">SiLU(x) = x / (1 + e⁻ˣ)</div>
+        </div>
+      </div>
+
+      <p>
+        Почему в KAN выбрана именно SiLU? Она гладкая, неограниченная сверху и
+        хорошо ведёт себя при обучении. В формуле ребра KAN она играет роль
+        «базовой линии», к которой добавляется сплайн:
+        <span class="math">φ(x) = w<sub>b</sub>·SiLU(x) + spline(x)</span>. Это
+        даёт модели и гладкий глобальный тренд, и локальную гибкость. Подробности —
+        в главе 4.
+      </p>
+
+      <h2 id="s3-3" data-num="3.3">Обратное распространение ошибки</h2>
+
+      <div class="callout note">
+        <p class="callout-title">Идея без формул</p>
+        <p>
+          Модель ошиблась. Мы передаём эту ошибку назад по слоям и на каждом шаге
+          умножаем на то, насколько сильно слой влиял на результат. Получаются
+          градиенты — направления, в которых нужно подкрутить параметры. Формулы
+          ниже — просто аккуратная запись этого процесса.
+        </p>
+      </div>
+
+      <p>
+        Теперь у нас есть сеть, но нет способа узнать, как менять её параметры.
+        Обратное распространение — это правило цепочки, применённое к графу
+        вычислений. Разберём его на минимальной сети
+        <span class="math">x → h → ŷ</span> с MSE.
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          z<sub>1</sub> = W<sub>1</sub>x + b<sub>1</sub>,
+          &nbsp; h = σ(z<sub>1</sub>),
+          &nbsp; z<sub>2</sub> = W<sub>2</sub>h + b<sub>2</sub>,
+          &nbsp; L = ½(ŷ − y)<sup>2</sup>
+        </div>
+        <div class="formula-caption"><strong>Сеть из одного скрытого слоя.</strong> Выход линейный, поэтому z₂ = ŷ.</div>
+      </div>
+
+      <p>
+        Начнём с выхода. Производная потери по <span class="math">ŷ</span> равна
+        ошибке, а поскольку выход линейный, это же число является «сигналом ошибки»
+        на выходном слое:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          δ<sub>2</sub> = <span class="frac"><span class="num">∂L</span><span class="den">∂z<sub>2</sub></span></span>
+          = ŷ − y
+        </div>
+        <div class="formula-caption"><strong>Ошибка выхода.</strong> Положительная, если модель завысила ответ.</div>
+      </div>
+
+      <p>
+        Градиенты выходного слоя получаются умножением ошибки на вход слоя:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂L</span><span class="den">∂W<sub>2</sub></span></span>
+          = δ<sub>2</sub> h<sup>T</sup>,
+          &nbsp;&nbsp;
+          <span class="frac"><span class="num">∂L</span><span class="den">∂b<sub>2</sub></span></span>
+          = δ<sub>2</sub>
+        </div>
+        <div class="formula-caption"><strong>Градиенты выходного слоя.</strong> Форма W₂ сохраняется: внешнее произведение векторов.</div>
+      </div>
+
+      <p>
+        Чтобы передать ошибку назад, умножаем её на транспонированную матрицу весов
+        и на производную активации скрытого слоя:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          δ<sub>1</sub> = ( W<sub>2</sub><sup>T</sup> δ<sub>2</sub> ) ⊙ σ′(z<sub>1</sub>)
+        </div>
+        <div class="formula-caption"><strong>Ошибка скрытого слоя.</strong> ⊙ — поэлементное умножение.</div>
+      </div>
+
+      <p>
+        И наконец — градиенты первого слоя:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂L</span><span class="den">∂W<sub>1</sub></span></span>
+          = δ<sub>1</sub> x<sup>T</sup>,
+          &nbsp;&nbsp;
+          <span class="frac"><span class="num">∂L</span><span class="den">∂b<sub>1</sub></span></span>
+          = δ<sub>1</sub>
+        </div>
+        <div class="formula-caption"><strong>Градиенты первого слоя.</strong> Тот же шаблон: сигнал ошибки × вход слоя.</div>
+      </div>
+
+      <p>
+        Вся процедура состоит из двух проходов. Прямой сохраняет промежуточные
+        значения (<span class="math">z<sub>1</sub>, h, ŷ</span>). Обратный идёт от
+        выхода к входу и на каждом шаге использует уже посчитанный сигнал ошибки.
+        Именно повторное использование <span class="math">δ</span> делает backprop
+        эффективным: стоимость обратного прохода сравнима со стоимостью прямого,
+        независимо от числа параметров.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">backprop_pseudocode.py — два прохода</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python"># X: (B, d), y: (B, 1) — батч; W1: (m, d), W2: (1, m)
+z1 = X @ W1.T + b1          # (B, m)
+h = sigmoid(z1)             # (B, m)
+y_hat = h @ W2.T + b2       # (B, 1)
+loss = ((y_hat - y) ** 2).mean()
+
+# обратный проход
+d2 = 2.0 * (y_hat - y) / B            # (B, 1)
+dW2 = d2.T @ h                        # (1, m)
+db2 = d2.sum(axis=0)                  # (1,)
+d1 = (d2 @ W2) * sigmoid_prime(z1)    # (B, m)
+dW1 = d1.T @ X                        # (m, d)
+db1 = d1.sum(axis=0)                  # (m,)
+
+# шаг оптимизатора — уже отдельная операция
+W1 -= lr * dW1
+W2 -= lr * dW2
+b1 -= lr * db1
+b2 -= lr * db2</code></pre>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Терминологическая тонкость</p>
+        <p>
+          Backpropagation — это не «алгоритм обучения», а способ вычислить
+          градиенты. Обучение делает оптимизатор: SGD, momentum, Adam. Разделение
+          важно: можно поменять оптимизатор, не меняя ни строчки в обратном
+          проходе.
+        </p>
+      </div>
+
+      <h3 id="s3-3-1">Как проверить градиенты</h3>
+
+      <p>
+        Если реализуете слой вручную, сравните аналитический градиент с конечной
+        разностью:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂L</span><span class="den">∂θ</span></span>
+          ≈ <span class="frac"><span class="num">L(θ + ε) − L(θ − ε)</span><span class="den">2ε</span></span>,
+          &nbsp;&nbsp; ε ≈ 10<sup>−5</sup>
+        </div>
+        <div class="formula-caption"><strong>Проверка градиента.</strong> Относительная ошибка порядка 10<sup>−6</sup> говорит, что всё верно.</div>
+      </div>
+
+      <p>
+        Это медленно и делается на маленьких тензорах, но экономит часы отладки.
+        В главе 5 мы применим ту же идею к KAN: сплайны дают простые аналитические
+        производные, и их легко проверить.
+      </p>
+
+      <h2 id="s3-4" data-num="3.4">Обучение и обобщение</h2>
+
+      <p>
+        Мы умеем считать градиенты. Осталось собрать цикл обучения и понять, когда
+        ему можно верить. Минимальный цикл выглядит так:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">train_loop.py — скелет обучения</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">for epoch in range(n_epochs):
+    model.train()
+    for xb, yb in train_loader:
+        pred = model(xb)
+        loss = loss_fn(pred, yb)
+
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+    model.eval()
+    with torch.no_grad():
+        val_loss = evaluate(model, val_loader)
+    print(epoch, val_loss)</code></pre>
+      </div>
+
+      <p>
+        Ключевое различие — <strong>обучающая</strong> и <strong>тестовая</strong>
+        выборки. На обучении мы минимизируем потери; на тесте проверяем, выучила
+        ли модель закономерность или просто запомнила ответы. Если ошибка на
+        обучении падает, а на тесте растёт — это <strong>переобучение</strong>.
+        Если обе высоки — <strong>недообучение</strong>.
+      </p>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 640 260" role="img" aria-label="Кривые потерь: обучение падает, валидация сначала падает, затем растёт">
+            <g stroke="var(--line)" stroke-width="1">
+              <path d="M50 210 H610 M50 210 V20"/>
+              <path d="M50 160 H610 M50 110 H610 M50 60 H610" opacity="0.5"/>
+            </g>
+            <path d="M50 210 H612 M50 210 V18" fill="none" stroke="var(--muted)" stroke-width="1.3"/>
+
+            <path d="M60 60 C 140 120, 220 165, 320 182 C 420 194, 520 199, 600 201"
+                  fill="none" stroke="var(--accent-2)" stroke-width="2.4"/>
+            <path d="M60 58 C 130 110, 190 140, 250 146 C 330 152, 400 120, 470 88 C 520 66, 570 54, 600 48"
+                  fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-dasharray="7 5"/>
+
+            <circle cx="250" cy="146" r="4.5" fill="var(--accent)"/>
+            <text x="262" y="140" font-family="system-ui, sans-serif" font-size="11" fill="var(--accent)">лучший момент</text>
+
+            <g font-family="system-ui, sans-serif" font-size="11.5" fill="var(--muted)">
+              <text x="560" y="232">эпохи</text>
+              <text x="18" y="30">потери</text>
+              <text x="330" y="246" text-anchor="middle">обучение ↓, валидация сначала ↓, потом ↑ — переобучение</text>
+            </g>
+            <g font-family="system-ui, sans-serif" font-size="11">
+              <text x="520" y="200" fill="var(--accent-2)">train</text>
+              <text x="520" y="58" fill="var(--accent)">validation</text>
+            </g>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 3.2.</strong> Типичная картина переобучения: модель продолжает улучшаться на обучении, но теряет обобщение.</figcaption>
+      </div>
+
+
+      <p>
+        Это проявление компромисса <strong>смещения и разброса</strong>: слишком
+        простая модель систематически ошибается (большое смещение), слишком сложная
+        — сильно зависит от конкретной выборки (большой разброс). Регуляризация
+        сдвигает баланс в сторону устойчивости.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Приём</th><th>Что делает</th><th>Когда помогает</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Weight decay (L2)</td><td>Штрафует большие веса</td><td>Почти всегда как базовая линия</td></tr>
+            <tr><td>Dropout</td><td>Случайно выключает нейроны</td><td>Большие полносвязные слои</td></tr>
+            <tr><td>Early stopping</td><td>Останавливает обучение по валидации</td><td>Когда видно переобучение</td></tr>
+            <tr><td>Аугментация</td><td>Расширяет данные преобразованиями</td><td>Изображения, текст, звук</td></tr>
+            <tr><td>Уменьшение модели</td><td>Снижает ёмкость</td><td>Мало данных</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="s3-4-1">Инициализация и устойчивость градиентов</h3>
+
+      <p>
+        Если веса слишком большие, активации и градиенты растут от слоя к слою и
+        «взрываются»; если слишком маленькие — «затухают». Поэтому используют
+        масштабированную инициализацию. Для Xavier (tanh, sigmoid) дисперсия
+        пропорциональна <span class="math">2/(n<sub>in</sub> + n<sub>out</sub>)</span>,
+        для He (ReLU) — <span class="math">2/n<sub>in</sub></span>.
+      </p>
+
+      <p>
+        Дополнительно помогают нормализация слоёв (BatchNorm, LayerNorm),
+        residual-связи и аккуратный выбор активации. Всё это — способы удержать
+        сигнал в разумном диапазоне на всей глубине сети.
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Порядок действий</p>
+        <p>
+          Начинайте с маленькой модели и маленького батча. Убедитесь, что она
+          переобучает несколько примеров. Затем добавляйте ёмкость и
+          регуляризацию. Так вы всегда понимаете, что именно изменило результат,
+          а не гадаете по одной красивой цифре.
+        </p>
+      </div>
+
+      <h2 id="s3-5" data-num="3.5">Теорема об универсальной аппроксимации</h2>
+
+      <p>
+        Естественный вопрос: достаточно ли одного скрытого слоя? Теорема
+        Цыбенко–Хорника отвечает утвердительно — в теоретическом смысле. Для
+        любой непрерывной функции на компактном множестве и любого
+        <span class="math">ε &gt; 0</span> найдётся однослойная сеть с сигмоидными
+        активациями, которая приближает её равномерно с ошибкой меньше
+        <span class="math">ε</span>:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          sup<sub>x∈K</sub> | f(x) − f<sub>MLP</sub>(x) | &lt; ε
+        </div>
+        <div class="formula-caption"><strong>Универсальная аппроксимация.</strong> Существование сети нужной ширины, но не рецепт её обучения.</div>
+      </div>
+
+      <p>
+        Интуиция простая: каждый нейрон скрытого слоя создаёт «ступеньку» или
+        «горб», а выходной слой складывает их с нужными весами. Чем больше
+        нейронов, тем мельче сетка, которой можно приблизить функцию.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Чего теорема не обещает</p>
+        <p>
+          Она не говорит, что ширина будет разумной: для точности
+          <span class="math">ε</span> в <span class="math">d</span> измерениях
+          может потребоваться экспоненциально много нейронов. Она не говорит, что
+          градиентный спуск найдёт эти веса. И не говорит, что сеть будет
+          интерпретируемой. Универсальность — свойство класса функций, а не
+          гарантия успеха обучения.
+        </p>
+      </div>
+
+      <p>
+        У KAN есть свой аналог: теорема Колмогорова–Арнольда даёт <em>точное</em>
+        представление непрерывной функции через одномерные функции и сложение.
+        Но и здесь есть оговорка: внутренние функции в теореме могут быть
+        негладкими и зависеть от функции сложным образом. Практический KAN
+        заменяет их сплайнами и добавляет глубину, получая другой inductive bias —
+        не «лучше вообще», а иначе.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Свойство</th><th>MLP</th><th>KAN</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Где нелинейность</td><td>В узлах, фиксированная</td><td>На рёбрах, обучаемая</td></tr>
+            <tr><td>Что хранится в параметрах</td><td>Числовые веса</td><td>Коэффициенты сплайнов и базовые веса</td></tr>
+            <tr><td>Аппроксимация</td><td>Универсальная, ширина может быть огромной</td><td>Точное представление по теореме; на практике — гладкие сплайны</td></tr>
+            <tr><td>Интерпретируемость</td><td>Обычно постфактум</td><td>Потенциально «из коробки»</td></tr>
+            <tr><td>Стоимость</td><td>Очень эффективные матричные операции</td><td>Дороже на параметр: вычисление базиса</td></tr>
+            <tr><td>Сильные задачи</td><td>Зрение, язык, большие данные</td><td>Гладкая регрессия, формулы, научные задачи</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="s3-6" data-num="3.6">Минимальный MLP на PyTorch</h2>
+
+      <p>
+        Соберём всё вместе на задаче XOR. Сеть <span class="math">2 → 8 → 1</span>
+        с tanh и сигмоидой обучается за пару секунд даже на слабом ноутбуке.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">xor_mlp.py — запускается на CPU</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">import torch
+from torch import nn
+
+X = torch.tensor([[0., 0.], [0., 1.], [1., 0.], [1., 1.]])
+y = torch.tensor([[0.], [1.], [1.], [0.]])
+
+model = nn.Sequential(
+    nn.Linear(2, 8),
+    nn.Tanh(),
+    nn.Linear(8, 1),
+    nn.Sigmoid(),
+)
+
+optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
+loss_fn = nn.MSELoss()
+
+for epoch in range(2001):
+    pred = model(X)
+    loss = loss_fn(pred, y)
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    if epoch % 500 == 0:
+        print(f"epoch {epoch:4d}  loss {loss.item():.5f}")
+
+with torch.no_grad():
+    print(model(X).round().flatten().tolist())  # [0.0, 1.0, 1.0, 0.0]</code></pre>
+      </div>
+
+      <p>
+        Обратите внимание: мы не программируем XOR вручную. Мы задаём архитектуру,
+        функцию потерь и оптимизатор, а веса находит градиентный спуск. Это и есть
+        обучение в его простейшем виде.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Мост к KAN</p>
+        <p>
+          В KAN на месте <code>nn.Linear</code> стоит слой, который для каждого
+          ребра хранит сплайн. Всё остальное — данные, потери, оптимизатор,
+          цикл обучения — остаётся почти тем же. Понимая MLP, вы уже понимаете
+          90% инфраструктуры KAN.
+        </p>
+      </div>
+
+      <h2 id="s3-7" data-num="3.7">Упражнения</h2>
+
+      <ol>
+        <li>
+          Почему один нейрон с линейной границей не может решить XOR? Нарисуйте
+          точки и попробуйте провести прямую.
+        </li>
+        <li>
+          Сколько параметров у MLP <span class="math">3 → 5 → 5 → 1</span>?
+        </li>
+        <li>
+          Выведите <span class="math">δ<sub>1</sub></span> для сети с сигмоидой
+          на скрытом слое. Почему появляется множитель
+          <span class="math">σ′(z<sub>1</sub>)</span>?
+        </li>
+        <li>
+          Что произойдёт, если забыть <code>optimizer.zero_grad()</code>? А если
+          вызвать <code>loss.backward()</code> дважды подряд без обнуления?
+        </li>
+        <li>
+          Зачем нужна валидационная выборка, если есть тестовая? Почему нельзя
+          подбирать гиперпараметры по тесту?
+        </li>
+        <li>
+          Сравните число параметров MLP <span class="math">2 → 8 → 1</span> и KAN
+          той же формы при <span class="math">G = 5</span>,
+          <span class="math">k = 3</span>.
+        </li>
+        <li>
+          Сформулируйте теорему об универсальной аппроксимации своими словами и
+          назовите два её ограничения.
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            Классы XOR лежат на диагоналях квадрата, поэтому любая прямая оставит
+            одну точку не с той стороны. Нужна как минимум одна «складка»
+            пространства — скрытый слой.
+          </li>
+          <li>
+            <span class="math">(3·5 + 5) + (5·5 + 5) + (5·1 + 1) = 20 + 30 + 6 = 56</span>.
+          </li>
+          <li>
+            Ошибка проходит через нелинейность, поэтому умножается на её
+            производную: <span class="math">δ<sub>1</sub> = (W<sub>2</sub><sup>T</sup>δ<sub>2</sub>) ⊙ σ′(z<sub>1</sub>)</span>.
+            Без этого множителя мы бы игнорировали, насколько чувствителен выход
+            к изменению <span class="math">z<sub>1</sub></span>.
+          </li>
+          <li>
+            Без <code>zero_grad()</code> градиенты накапливаются: каждый шаг
+            использует сумму всех предыдущих. Обучение станет неустойчивым.
+            Двойной backward без обнуления даст удвоенный градиент.
+          </li>
+          <li>
+            Валидация нужна для выбора гиперпараметров и ранней остановки, тест —
+            только для финальной честной оценки. Если подбирать по тесту, он
+            «протекает» в модель, и оценка перестаёт быть независимой.
+          </li>
+          <li>
+            MLP: <span class="math">(2·8 + 8) + (8·1 + 1) = 24 + 9 = 33</span>.
+            KAN: на ребро <span class="math">G + k + 1 = 9</span> параметров;
+            <span class="math">(2·8·9 + 8) + (8·1·9 + 1) = 152 + 73 = 225</span>.
+            Отношение ≈ 6.8×. Именно поэтому KAN выгоден, когда малая сеть уже
+            достаточно выразительна, а не когда нужны миллионы параметров.
+          </li>
+          <li>
+            Любую непрерывную функцию на компактном множестве можно приблизить
+            однослойной сетью с любой наперёд заданной точностью. Ограничения:
+            нужная ширина может быть экспоненциально большой, а факт
+            существования весов не гарантирует, что оптимизатор их найдёт.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s3-8" data-num="3.8">Итоги главы</h2>
+
+      <ul>
+        <li>
+          Один нейрон — линейная граница. XOR показал, что без скрытых слоёв
+          этого недостаточно.
+        </li>
+        <li>
+          MLP — композиция линейных слоёв и нелинейностей; именно нелинейность
+          делает глубокую сеть выразительной.
+        </li>
+        <li>
+          Обратное распространение — это правило цепочки на графе вычислений:
+          ошибка выхода последовательно умножается на локальные производные.
+        </li>
+        <li>
+          Обобщение важнее ошибки на обучении: нужны валидация, регуляризация и
+          контроль переобучения.
+        </li>
+        <li>
+          Универсальная аппроксимация объясняет, почему MLP в принципе может
+          выучить всё, но не объясняет, почему это будет дёшево и интерпретируемо.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          Мы готовы к главному: заменить скалярный вес функцией. В главе 4 —
+          теорема Колмогорова–Арнольда, B-сплайны и точная формула слоя KAN.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-2.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">2. Математический фундамент</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-4.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">4. Теорема и архитектура KAN</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть I «Основы» · глава 3 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-4.html">Глава 4 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+<script src="assets/widgets.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+

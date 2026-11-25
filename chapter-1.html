@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 1. ИИ, машинное обучение и нейросети — KANBook</title>
+<meta name="description" content="Понятия искусственного интеллекта, машинного обучения и нейросетей; постановка задачи обучения; краткая история и место Kolmogorov–Arnold Networks.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 1 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn is-disabled" href="#" tabindex="-1" aria-disabled="true" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-2.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">1. ИИ, машинное обучение и нейросети</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html"><strong>1</strong></a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть I · Основы</p>
+      <h1>Искусственный интеллект, машинное обучение и нейросети</h1>
+      <p class="lead">
+        Прежде чем говорить о KAN, нужно договориться о словах. Что такое обучение?
+        Что именно оптимизирует нейросеть? И почему новая архитектура вообще смогла
+        потеснить обычные нейросети?
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 1</strong> из 9</span>
+        <span class="meta-chip">≈ 40 минут</span>
+        <span class="meta-chip">теория · без программирования</span>
+        <span class="meta-chip">сложность: новичок</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Вместо того чтобы пытаться создать программу, имитирующую разум взрослого человека,
+        почему бы не попробовать создать программу, которая имитирует разум ребёнка?
+        <cite>Алан Тьюринг, «Вычислительные машины и разум», 1950</cite>
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Начните с модуля 0</p>
+        <p>
+          В нём базовый синтаксис Python, обозначения формул и словарь терминов.
+          Это займёт около 45 минут и избавит от путаницы в первых главах.
+        </p>
+      </div>
+
+      <h2 id="s1-1" data-num="1.1">Три круга: ИИ, машинное обучение, нейросети</h2>
+
+      <p>
+        Слова «искусственный интеллект», «машинное обучение» и «нейросеть» часто
+        используют как синонимы, но обозначают они разное. Удобно представлять их
+        вложенными кругами: искусственный интеллект — самый широкий, машинное
+        обучение — его часть, нейросети — часть машинного обучения.
+      </p>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 640 260" role="img" aria-label="Вложенные круги: искусственный интеллект, машинное обучение, нейросети, KAN">
+            <rect x="10" y="10" width="620" height="240" rx="16" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+            <text x="30" y="38" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="var(--muted)" letter-spacing="1.2">ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ</text>
+
+            <rect x="60" y="56" width="520" height="176" rx="14" fill="var(--surface)" stroke="var(--line-strong)"/>
+            <text x="80" y="82" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="var(--muted)" letter-spacing="1.2">МАШИННОЕ ОБУЧЕНИЕ</text>
+
+            <rect x="110" y="100" width="420" height="112" rx="12" fill="var(--accent-2-soft)" stroke="var(--accent-2)" stroke-opacity="0.4"/>
+            <text x="130" y="126" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="var(--accent-2)" letter-spacing="1.2">НЕЙРОСЕТИ</text>
+
+            <rect x="160" y="142" width="150" height="46" rx="10" fill="var(--accent)" opacity="0.92"/>
+            <text x="235" y="171" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#fff" text-anchor="middle">KAN</text>
+
+            <rect x="330" y="142" width="170" height="46" rx="10" fill="var(--surface)" stroke="var(--line-strong)"/>
+            <text x="415" y="163" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="var(--ink-soft)" text-anchor="middle">MLP, CNN, RNN,</text>
+            <text x="415" y="179" font-family="system-ui, sans-serif" font-size="12" font-weight="600" fill="var(--ink-soft)" text-anchor="middle">трансформеры…</text>
+
+            <text x="480" y="232" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)" text-anchor="end">правила, планирование, экспертные системы…</text>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 1.1.</strong> KAN — не отдельный вид «интеллекта», а конкретная архитектура внутри нейросетей.</figcaption>
+      </div>
+
+      <p class="demo-note">
+        CNN, RNN и трансформеры на схеме — просто другие архитектуры. Их названия
+        сейчас не нужно запоминать: в книге мы будем использовать только MLP
+        (глава 3) и KAN (глава 4).
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Термин</th><th>Что означает</th><th>Пример</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Искусственный интеллект</strong></td>
+              <td>Любые системы, решающие задачи, которые требуют интеллекта: восприятие, рассуждение, язык, принятие решений.</td>
+              <td>Шахматный движок, чат-бот, планировщик маршрутов.</td>
+            </tr>
+            <tr>
+              <td><strong>Машинное обучение</strong></td>
+              <td>Подход, при котором поведение системы не прописано вручную, а выводится из данных.</td>
+              <td>Кредитный скоринг, рекомендации товаров.</td>
+            </tr>
+            <tr>
+              <td><strong>Нейросеть</strong></td>
+              <td>Параметризованная функция, собранная из слоёв; параметры подбираются по данным.</td>
+              <td>Классификатор изображений, языковая модель.</td>
+            </tr>
+            <tr>
+              <td><strong>Глубокое обучение</strong></td>
+              <td>Нейросети с большим числом последовательных слоёв.</td>
+              <td>ResNet, GPT, диффузионные модели.</td>
+            </tr>
+            <tr>
+              <td><strong>KAN</strong></td>
+              <td>Сеть, в которой обучаемыми элементами являются функции на рёбрах, а не только числовые веса.</td>
+              <td>Аппроксимация научных законов, интерпретируемая регрессия.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Терминологическая аккуратность</p>
+        <p>
+          Фраза «нейросеть думает» — удобная метафора, но не описание. Нейросеть —
+          это функция с настраиваемыми параметрами. Всё, что она «понимает», заключено
+          в этих параметрах и в данных, на которых её обучили.
+        </p>
+      </div>
+
+      <h2 id="s1-2" data-num="1.2">Задача обучения: четыре обязательные части</h2>
+
+      <p>
+        Почти любое обучение с учителем описывается одной схемой. Есть
+        <strong>данные</strong>: пары «вход — правильный ответ». Есть
+        <strong>модель</strong> — функция с параметрами. Есть
+        <strong>функция потерь</strong>, которая измеряет, насколько ответ модели
+        далёк от правильного. И есть <strong>алгоритм оптимизации</strong>, который
+        подбирает параметры так, чтобы потери были маленькими.
+      </p>
+
+      <p>
+        Формально: пусть дано <span class="math">N</span> примеров
+        <span class="math">(x<sub>i</sub>, y<sub>i</sub>)</span>, где
+        <span class="math">x<sub>i</sub></span> — вход (признаки), а
+        <span class="math">y<sub>i</sub></span> — целевое значение. Модель
+        <span class="math">f<sub>θ</sub></span> зависит от параметров
+        <span class="math">θ</span>. Тогда обучение — это решение задачи
+        минимизации:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          θ* = arg min<sub>θ</sub>
+          <span class="frac"><span class="num">1</span><span class="den">N</span></span>
+          <span class="big-op">Σ<sub>i=1</sub><sup>N</sup></span>
+          L( f<sub>θ</sub>(x<sub>i</sub>), y<sub>i</sub> ) + λ R(θ)
+        </div>
+        <div class="formula-caption"><strong>Эмпирический риск.</strong> Средние потери на данных плюс штраф за сложность модели.</div>
+      </div>
+
+      <p>
+        Первое слагаемое называется <em>эмпирическим риском</em>: это средняя ошибка
+        на обучающей выборке. Второе — <em>регуляризатор</em>
+        <span class="math">R(θ)</span> с коэффициентом <span class="math">λ</span>:
+        он мешает модели стать слишком сложной и «зазубрить» данные. В главе 3 мы
+        увидим, зачем это нужно, на примере переобучения.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Часть</th><th>Что это</th><th>Пример</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Данные</strong></td><td>Набор примеров, по которым мы учимся</td><td>10 000 фотографий с метками «кот» / «не кот»</td></tr>
+            <tr><td><strong>Модель</strong></td><td>Семейство функций с параметрами</td><td>MLP с двумя скрытыми слоями; KAN с сеткой сплайнов</td></tr>
+            <tr><td><strong>Потери</strong></td><td>Числовая мера ошибки одного предсказания</td><td>Среднеквадратичная ошибка; кросс-энтропия</td></tr>
+            <tr><td><strong>Оптимизатор</strong></td><td>Правило обновления параметров</td><td>Градиентный спуск, SGD, Adam</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="s1-2-1">Три типа потерь, которые встретятся дальше</h3>
+
+      <p>
+        Вид функции потерь определяется задачей. В регрессии мы предсказываем число,
+        и естественно штрафовать модель за квадрат отклонения:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          L<sub>MSE</sub>(ŷ, y) = (ŷ − y)<sup>2</sup>
+        </div>
+        <div class="formula-caption"><strong>Среднеквадратичная ошибка.</strong> Сильно штрафует большие промахи; чувствительна к выбросам.</div>
+      </div>
+
+      <p>
+        В классификации модель выдаёт вероятности классов, а потери сравнивают
+        распределение предсказания с «единичной» меткой:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          L<sub>CE</sub>(p, y) = − log p<sub>y</sub>
+        </div>
+        <div class="formula-caption"><strong>Кросс-энтропия.</strong> Если вероятность правильного класса близка к нулю, штраф растёт очень быстро.</div>
+      </div>
+
+      <p>
+        Наконец, если важна устойчивость к выбросам, используют модуль отклонения:
+        <span class="math">L<sub>MAE</sub> = |ŷ − y|</span>. Выбор потерь — это
+        выбор того, <em>какие ошибки для нас особенно дороги</em>, а не техническая
+        формальность.
+      </p>
+
+      <div class="callout">
+        <p class="callout-title">Главная формула книги</p>
+        <p>
+          Обучение = поиск параметров, минимизирующих средние потери на данных.
+          Меняются архитектуры, функции потерь и оптимизаторы — но эта схема остаётся.
+          KAN меняет только одно: <strong>что именно считается параметром</strong>.
+        </p>
+      </div>
+
+      <h2 id="s1-3" data-num="1.3">Короткая история: от нейрона до KAN</h2>
+
+      <p>
+        Идея «сети из простых вычислительных элементов» старше, чем слово
+        «нейросеть» в его нынешнем смысле. Полезно увидеть линию развития: почти
+        каждое сегодняшнее понятие — это ответ на ограничение, обнаруженное раньше.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Год</th><th>Событие</th><th>Почему это важно</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1943</td>
+              <td>Формальный нейрон Мак-Каллока и Питтса</td>
+              <td>Показали, что пороговый элемент может вычислять логические функции.</td>
+            </tr>
+            <tr>
+              <td>1958</td>
+              <td>Перцептрон Розенблатта</td>
+              <td>Первая обучаемая модель, которая меняла веса по ошибке.</td>
+            </tr>
+            <tr>
+              <td>1969</td>
+              <td>Книга «Перцептроны» Минского и Пейперта</td>
+              <td>Однослойная сеть не решает XOR; интерес к нейросетям надолго упал.</td>
+            </tr>
+            <tr>
+              <td>1974–1986</td>
+              <td>Обратное распространение ошибки</td>
+              <td>Вербос (1974), затем Румельхарт, Хинтон и Уильямс (1986) сделали обучение многослойных сетей практичным.</td>
+            </tr>
+            <tr>
+              <td>1989–1991</td>
+              <td>Теоремы об универсальной аппроксимации</td>
+              <td>MLP с достаточной шириной может приблизить любую непрерывную функцию.</td>
+            </tr>
+            <tr>
+              <td>1998</td>
+              <td>LeNet-5</td>
+              <td>Свёрточные сети научились читать рукописные цифры.</td>
+            </tr>
+            <tr>
+              <td>2012</td>
+              <td>AlexNet</td>
+              <td>Резкое улучшение на ImageNet; началась эпоха глубокого обучения.</td>
+            </tr>
+            <tr>
+              <td>2017</td>
+              <td>Transformer</td>
+              <td>Механизм внимания стал основой современных языковых моделей.</td>
+            </tr>
+            <tr>
+              <td>2024</td>
+              <td>KAN: Kolmogorov–Arnold Networks</td>
+              <td>Лю и др. предложили обучать функции на рёбрах вместо скалярных весов: arXiv:2404.19756.</td>
+            </tr>
+            <tr>
+              <td>2024</td>
+              <td>KAN 2.0</td>
+              <td>Мультипликативные узлы, символьные формулы и применение в научных задачах.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Почему KAN появился так поздно?</p>
+        <p>
+          Теорема Колмогорова–Арнольда известна с 1957 года, а сплайны — ещё старше.
+          Но одно дело — теорема существования, другое — эффективная реализация:
+          нужно было научиться считать базисные функции на GPU, придумать удачную
+          параметризацию и схему обучения. KAN соединил старую математику с
+          современным инженерным стеком.
+        </p>
+      </div>
+
+      <h2 id="s1-4" data-num="1.4">Почему MLP — «чёрный ящик» и что предлагает KAN</h2>
+
+      <p>
+        Классический многослойный перцептрон (MLP) устроен так: на каждом слое
+        вход умножается на матрицу весов, к результату прибавляется смещение, затем
+        применяется нелинейность:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          h<sup>(l+1)</sup> = σ( W<sup>(l)</sup> h<sup>(l)</sup> + b<sup>(l)</sup> )
+        </div>
+        <div class="formula-caption"><strong>Слой MLP.</strong> W — матрица весов, b — вектор смещений, σ — фиксированная нелинейность.</div>
+      </div>
+
+      <p>
+        Здесь обучаются числа: элементы матриц <span class="math">W</span> и векторов
+        <span class="math">b</span>. Отдельный вес <span class="math">w<sub>ij</sub></span>
+        сам по себе почти ничего не значит — смысл появляется только в комбинации
+        миллионов таких чисел. Отсюда и «чёрный ящик»: мы можем измерить важность
+        нейрона, построить карты внимания или подобрать примеры, но формула, которую
+        выучила сеть, обычно не извлекается напрямую.
+      </p>
+
+      <p>
+        KAN предлагает заменить скалярный вес на <em>обучаемую функцию</em> одного
+        аргумента. Слой KAN выглядит так:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          x<sup>(l+1)</sup><sub>j</sub> =
+          <span class="big-op">Σ<sub>i=1</sub><sup>n<sub>l</sub></sup></span>
+          φ<sub>l,j,i</sub>( x<sup>(l)</sup><sub>i</sub> )
+        </div>
+        <div class="formula-caption"><strong>Слой KAN.</strong> Каждое ребро (i → j) несёт свою функцию φ; узел только складывает вклады.</div>
+      </div>
+
+      <p>
+        В MLP нелинейность живёт в узлах и задана заранее. В KAN нелинейность живёт
+        на рёбрах и <em>обучается</em>. Узел же выполняет самую простую операцию —
+        сложение. Именно это делает сеть потенциально интерпретируемой: после
+        обучения можно нарисовать каждую <span class="math">φ<sub>l,j,i</sub></span>
+        и посмотреть, что она делает.
+      </p>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 720 300" role="img" aria-label="Сравнение MLP и KAN: веса и активации против обучаемых функций на рёбрах">
+            <text x="24" y="30" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="var(--ink)">MLP</text>
+            <text x="24" y="48" font-family="system-ui, sans-serif" font-size="10.5" fill="var(--muted)">веса — числа, нелинейность — в узлах</text>
+
+            <g stroke="var(--line-strong)" stroke-width="1.1" opacity="0.85">
+              <path d="M74 86 L166 70 M74 86 L166 122 M74 86 L166 174 M74 86 L166 226"/>
+              <path d="M74 146 L166 70 M74 146 L166 122 M74 146 L166 174 M74 146 L166 226"/>
+              <path d="M74 206 L166 70 M74 206 L166 122 M74 206 L166 174 M74 206 L166 226"/>
+              <path d="M194 70 L286 116 M194 70 L286 184"/>
+              <path d="M194 122 L286 116 M194 122 L286 184"/>
+              <path d="M194 174 L286 116 M194 174 L286 184"/>
+              <path d="M194 226 L286 116 M194 226 L286 184"/>
+            </g>
+
+            <g fill="var(--surface-2)" stroke="var(--accent-2)" stroke-width="1.2">
+              <circle cx="60" cy="86" r="13"/><circle cx="60" cy="146" r="13"/><circle cx="60" cy="206" r="13"/>
+              <circle cx="180" cy="70" r="13"/><circle cx="180" cy="122" r="13"/>
+              <circle cx="180" cy="174" r="13"/><circle cx="180" cy="226" r="13"/>
+              <circle cx="300" cy="116" r="13"/><circle cx="300" cy="184" r="13"/>
+            </g>
+            <g font-family="Georgia, serif" font-size="11" fill="var(--accent-2)" text-anchor="middle">
+              <text x="180" y="74">σ</text><text x="180" y="126">σ</text><text x="180" y="178">σ</text><text x="180" y="230">σ</text>
+            </g>
+            <text x="120" y="80" font-family="Georgia, serif" font-size="10.5" font-style="italic" fill="var(--accent)">W</text>
+
+            <text x="390" y="30" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="var(--ink)">KAN</text>
+            <text x="390" y="48" font-family="system-ui, sans-serif" font-size="10.5" fill="var(--muted)">на рёбрах — обучаемые функции, в узлах — сумма</text>
+
+            <g fill="none" stroke="var(--accent)" stroke-width="1.4" opacity="0.6">
+              <path d="M434 86 Q 530 66, 626 116"/>
+              <path d="M434 86 Q 530 130, 626 184"/>
+              <path d="M434 146 Q 530 118, 626 116"/>
+              <path d="M434 146 Q 530 168, 626 184"/>
+              <path d="M434 206 Q 530 152, 626 116"/>
+              <path d="M434 206 Q 530 212, 626 184"/>
+            </g>
+
+            <g fill="var(--surface-2)" stroke="var(--accent-2)" stroke-width="1.2">
+              <circle cx="420" cy="86" r="13"/><circle cx="420" cy="146" r="13"/><circle cx="420" cy="206" r="13"/>
+              <circle cx="640" cy="116" r="13"/><circle cx="640" cy="184" r="13"/>
+            </g>
+
+            <g font-family="system-ui, sans-serif" font-size="15" fill="var(--accent-2)" text-anchor="middle">
+              <text x="640" y="121">+</text><text x="640" y="189">+</text>
+            </g>
+
+            <g fill="none" stroke="var(--accent-2)" stroke-width="1.6" stroke-linecap="round">
+              <path d="M500 76 q 8 -10 16 0 t 16 0"/>
+              <path d="M500 156 q 8 -10 16 0 t 16 0"/>
+            </g>
+            <text x="548" y="72" font-family="Georgia, serif" font-size="10.5" font-style="italic" fill="var(--accent-2)">φ(x)</text>
+            <text x="548" y="152" font-family="Georgia, serif" font-size="10.5" font-style="italic" fill="var(--accent-2)">φ(x)</text>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 1.2.</strong> Одна и та же идея «сеть из слоёв», но разное место нелинейности. Справа показан один слой KAN без скрытого слоя.</figcaption>
+      </div>
+
+      <h3 id="s1-4-1">Что обещает KAN</h3>
+
+      <ul>
+        <li>
+          <strong>Эффективность на гладких функциях.</strong> Сплайн степени
+          <span class="math">k</span> на сетке из <span class="math">G</span>
+          интервалов приближает гладкую функцию с ошибкой порядка
+          <span class="math">O(G<sup>−(k+1)</sup>)</span>. Увеличивая сетку, мы
+          систематически повышаем точность, а не просто добавляем нейроны наугад.
+        </li>
+        <li>
+          <strong>Интерпретируемость.</strong> После обучения каждое ребро — это
+          функция одной переменной. Её можно нарисовать, разрежить (оставить
+          важные рёбра) и попытаться узнать в ней знакомую формулу: синус,
+          экспоненту, квадрат.
+        </li>
+        <li>
+          <strong>Локальное уточнение.</strong> Обучение можно начать на грубой
+          сетке, а потом «дорастить» её: функция перестраивается на новом базисе
+          без полного переобучения с нуля.
+        </li>
+        <li>
+          <strong>Научные задачи.</strong> Там, где важна не только точность, но и
+          сама формула — физика, дифференциальные уравнения, поиск закономерностей —
+          KAN даёт шанс получить результат, который можно прочитать.
+        </li>
+      </ul>
+
+      <div class="callout warning">
+        <p class="callout-title">Без хайпа</p>
+        <p>
+          KAN — не «замена MLP вообще». Он дороже по вычислениям на параметр,
+          чувствителен к диапазону входов (сплайны определены на отрезке) и не
+          всегда выигрывает на больших задачах зрения и языка. Сравнение
+          Yu et al., «KAN or MLP: A Fairer Comparison» (2024), показывает: KAN
+          силён в символьной регрессии и непрерывном обучении, MLP — в
+          крупномасштабных задачах машинного обучения. Мы будем держать этот
+          баланс в голове всю книгу.
+        </p>
+      </div>
+
+      <h2 id="s1-5" data-num="1.5">Виды обучения</h2>
+
+      <p>
+        Постановка «есть <span class="math">x</span> и правильный
+        <span class="math">y</span>» — лишь один из сценариев. Ниже — четыре
+        основных режима; для каждого полезно понимать, где KAN применим, а где
+        пока нет.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Режим</th><th>Данные</th><th>Цель</th><th>Пример</th><th>KAN сегодня</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>С учителем</strong></td>
+              <td>Пары <span class="math">(x, y)</span></td>
+              <td>Предсказывать <span class="math">y</span> по <span class="math">x</span></td>
+              <td>Регрессия цены, классификация изображений</td>
+              <td>Основной сценарий: регрессия и классификация</td>
+            </tr>
+            <tr>
+              <td><strong>Без учителя</strong></td>
+              <td>Только <span class="math">x</span></td>
+              <td>Найти структуру: кластеры, скрытые факторы</td>
+              <td>Кластеризация, понижение размерности</td>
+              <td>Ограниченно: автоэнкодеры на KAN — исследовательская тема</td>
+            </tr>
+            <tr>
+              <td><strong>Самообучение</strong></td>
+              <td>Только <span class="math">x</span>, метки создаются автоматически</td>
+              <td>Предсказывать часть входа по другой части</td>
+              <td>Языковые модели: следующее слово</td>
+              <td>Пока редко: дорого и неочевидно</td>
+            </tr>
+            <tr>
+              <td><strong>С подкреплением</strong></td>
+              <td>Среда, действия, награда</td>
+              <td>Максимизировать суммарную награду</td>
+              <td>Игры, робототехника</td>
+              <td>Исследования: KAN как аппроксиматор политики</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Есть и другие оси классификации: обучение «в один проход» и пакетное,
+        генеративные и дискриминативные модели, обучение с частичным участием
+        учителя. Для первой части книги достаточно помнить главное: <em>тип
+        обучения определяет, какие данные доступны и что считается ошибкой</em>.
+        Архитектура KAN сама по себе не привязана к конкретному режиму — она
+        заменяет «кирпичик» модели, а не всю постановку задачи.
+      </p>
+
+      <h2 id="s1-6" data-num="1.6">Как устроена книга</h2>
+
+      <p>
+        Книга задумана как один маршрут: каждая глава добавляет ровно один
+        слой понимания и опирается на предыдущий. Первые пять глав — фундамент,
+        главы 6–9 — путь до реальной модели и сервиса. Вот карта.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Глава</th><th>Что вы освоите</th><th>Зачем это нужно для KAN</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>2. Математика</strong></td>
+              <td>Матрицы и тензоры, производные, градиент, вероятность, оптимизация.</td>
+              <td>Слой KAN — это матрица функций; обучение — градиентный спуск по коэффициентам сплайнов.</td>
+            </tr>
+            <tr>
+              <td><strong>3. MLP</strong></td>
+              <td>Перцептрон, активации, обратное распространение, переобучение.</td>
+              <td>Нужна база для сравнения и понимания, что именно меняет KAN.</td>
+            </tr>
+            <tr>
+              <td><strong>4. Теория KAN</strong></td>
+              <td>Теорема Колмогорова–Арнольда, B-сплайны, устройство слоя.</td>
+              <td>Формулы, которые в главе 5 превратятся в работающий код.</td>
+            </tr>
+            <tr>
+              <td><strong>5. Практика</strong></td>
+              <td>Реализация KAN, обучение, сравнение с MLP, интерпретация.</td>
+              <td>Собственный эксперимент и честные выводы.</td>
+            </tr>
+            <tr>
+              <td><strong>6. Данные</strong></td>
+              <td>Split, нормализация, метрики, кросс-валидация, утечки.</td>
+              <td>Без честной оценки модель нельзя считать полезной.</td>
+            </tr>
+            <tr>
+              <td><strong>7. Реальная KAN</strong></td>
+              <td>KAN 4 → 3 на Iris, 111 параметров, экспорт весов.</td>
+              <td>Модель, которую можно запустить и показать людям.</td>
+            </tr>
+            <tr>
+              <td><strong>8. Претрейн и LLM</strong></td>
+              <td>Pretraining, fine-tuning, LLM и границы KAN.</td>
+              <td>Понимание, что реально, а что хайп.</td>
+            </tr>
+            <tr>
+              <td><strong>9. Сервис</strong></td>
+              <td>HTTP API, Docker, тесты, мониторинг, капстоун.</td>
+              <td>Превращает модель в продукт для пользователей.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 id="s1-6-1">Обозначения</h3>
+
+      <p>
+        Мы стараемся не вводить символ без объяснения. Вот минимальный словарь,
+        который дальше будет использоваться постоянно.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Символ</th><th>Смысл</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><span class="math">N</span></td><td>Число примеров в выборке</td></tr>
+            <tr><td><span class="math">d</span></td><td>Размерность входа (число признаков)</td></tr>
+            <tr><td><span class="math">θ</span></td><td>Все обучаемые параметры модели</td></tr>
+            <tr><td><span class="math">L</span></td><td>Функция потерь</td></tr>
+            <tr><td><span class="math">∇<sub>θ</sub>L</span></td><td>Градиент потерь по параметрам</td></tr>
+            <tr><td><span class="math">η</span></td><td>Скорость обучения (learning rate)</td></tr>
+            <tr><td><span class="math">λ</span></td><td>Сила регуляризации</td></tr>
+            <tr><td><span class="math">G</span></td><td>Число интервалов сетки сплайна (grid size)</td></tr>
+            <tr><td><span class="math">k</span></td><td>Степень B-сплайна (обычно 3 — кубический)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout practice">
+        <p class="callout-title">Как читать с пользой</p>
+        <p>
+          Держите под рукой блокнот: формулы вроде обратного распространения
+          усваиваются, только когда вы сами проводите стрелки на графе вычислений.
+          Интерактивные блоки — не украшение: меняйте параметры и смотрите, что
+          происходит. А код из главы 5 лучше набрать руками, а не копировать.
+        </p>
+      </div>
+
+      <h2 id="s1-7" data-num="1.7">Упражнения</h2>
+
+      <ol>
+        <li>
+          Чем искусственный интеллект отличается от машинного обучения, а машинное
+          обучение — от нейросети? Приведите по одному примеру системы каждого типа.
+        </li>
+        <li>
+          Почему программа, которая просто запомнила ответы для всех примеров из
+          обучающей выборки, не считается хорошей моделью?
+        </li>
+        <li>
+          Сформулируйте задачу обучения для предсказания цены квартиры: что здесь
+          <span class="math">x</span>, что <span class="math">y</span>, какая
+          модель и какая функция потерь?
+        </li>
+        <li>
+          Пусть модель — KAN. Что в постановке задачи из упражнения 3 изменится,
+          а что останется тем же?
+        </li>
+        <li>
+          Почему задача XOR стала важной для истории нейросетей? Нарисуйте четыре
+          точки на плоскости и попробуйте разделить их одной прямой.
+        </li>
+        <li>
+          Назовите задачу, где KAN вероятнее окажется полезнее MLP, и задачу, где
+          MLP, скорее всего, выиграет. Объясните почему.
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            ИИ — зонтичный термин для систем, решающих «умные» задачи; машинное
+            обучение — подход, где поведение выводится из данных; нейросеть —
+            конкретный класс моделей. Примеры: экспертные правила (ИИ без
+            обучения), решающее дерево (МО без нейросети), MLP (нейросеть).
+          </li>
+          <li>
+            Потому что цель — не минимизировать ошибку на обучающих примерах, а
+            хорошо работать на новых данных. Запоминание даёт нулевую ошибку на
+            обучении и произвольную — на тесте; это переобучение.
+          </li>
+          <li>
+            <span class="math">x</span> — признаки (площадь, район, этаж, год
+            постройки), <span class="math">y</span> — цена. Модель — например,
+            MLP или KAN; потери — MSE или MAE. Оптимизатор — Adam или SGD.
+          </li>
+          <li>
+            Изменится только внутреннее устройство модели и смысл параметров
+            <span class="math">θ</span>: вместо весов — коэффициенты сплайнов и
+            базовые веса. Данные, потери и оптимизатор останутся прежними.
+          </li>
+          <li>
+            Точки XOR нельзя разделить одной прямой: классы расположены
+            «по диагонали». Однослойный перцептрон проводит именно прямую, поэтому
+            ему нужен скрытый слой, который переводит задачу в пространство, где
+            разделение возможно.
+          </li>
+          <li>
+            KAN полезнее в задаче поиска формулы по данным (символьная регрессия,
+            физические законы) — там важна интерпретируемость. MLP выиграет в
+            распознавании больших изображений или обработке языка, где данных
+            много, а формула не нужна.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s1-8" data-num="1.8">Итоги главы</h2>
+
+      <ul>
+        <li>
+          ИИ — широкое понятие; машинное обучение — подход, извлекающий поведение
+          из данных; нейросети — класс моделей внутри машинного обучения.
+        </li>
+        <li>
+          Любое обучение с учителем раскладывается на четыре части: данные,
+          модель, функция потерь, оптимизатор.
+        </li>
+        <li>
+          Обучение минимизирует средние потери плюс регуляризатор; цель — не
+          запомнить данные, а обобщить закономерность.
+        </li>
+        <li>
+          MLP хранит знания в числовых весах; KAN — в функциях на рёбрах. Это
+          меняет и выразительность, и интерпретируемость, и цену вычислений.
+        </li>
+        <li>
+          KAN — многообещающий, но не универсальный инструмент: его сильные стороны
+          проявляются на гладких функциях и в научных задачах.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          В следующей главе — математический минимум: векторы и матрицы,
+          производная сложной функции, вероятность и градиентный спуск. Без этого
+          нельзя понять ни обратное распространение, ни то, как обучаются
+          коэффициенты сплайнов в KAN.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev is-disabled" href="#" tabindex="-1" aria-disabled="true">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">Это первая глава</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-2.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">2. Математический фундамент</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть I «Основы» · глава 1 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-2.html">Глава 2 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+

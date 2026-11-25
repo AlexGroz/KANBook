@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 8. Претрейн, дообучение и LLM: как обучать KAN — KANBook</title>
+<meta name="description" content="Что такое претрейн и дообучение, как устроены LLM и трансформеры, есть ли pretrained KAN и как провести маленький эксперимент с warm start.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 8 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-7.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-9.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">8. Претрейн, дообучение и LLM</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html"><strong>8</strong></a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть III · По желанию</p>
+      <h1>Претрейн, дообучение и LLM: как обучать KAN</h1>
+      <p class="lead">
+        Слово «претрейн» чаще всего звучит рядом с LLM. Разберёмся, что это
+        на самом деле, как устроены большие языковые модели и что из этого
+        применимо к KAN. Главный вопрос: если универсального pretrained KAN нет,
+        как её обучать? Ответ: с нуля под задачу, а претрейн — дополнительная
+        стратегия, а не обязательный этап.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 8</strong> из 9</span>
+        <span class="meta-chip">≈ 65 минут</span>
+        <span class="meta-chip">претрейн · LLM</span>
+        <span class="meta-chip">сложность: продвинутая</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Сначала заставьте работать, потом — правильно, потом — быстро.
+        <cite>Кент Бек</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Зачем эта глава</p>
+        <p>
+          KAN можно обучать без LLM и без готового pretrained-чекпоинта — и мы
+          это уже делали в главе 7. Но чтобы стать профи, нужно понимать, как
+          обучают большие модели, почему «pretrained KAN» — это не универсальный
+          чекпоинт, как у LLM, и как сделать доменный претрейн своей KAN. Поэтому
+          глава обязательна. Начнём с того, как KAN обучают на самом деле.
+        </p>
+      </div>
+      <h3 id="s8-0-1">Зачем KAN-инженеру LLM</h3>
+
+      <ul>
+        <li>
+          <strong>Контекст.</strong> LLM — главный класс современных моделей.
+          Без него вы не поймёте, с чем сравнивают KAN и почему о ней вообще
+          говорят.
+        </li>
+        <li>
+          <strong>Архитектура.</strong> Внутри трансформера есть MLP-блок. KAN
+          исследуют как его замену — значит, нужно знать, что именно заменяют.
+        </li>
+        <li>
+          <strong>Терминология.</strong> «Pretrained KAN» звучит как «pretrained
+          LLM», но это разные вещи. Чтобы не повторять мифы, нужно понимать
+          pretraining и fine-tuning.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Короткий ответ на главный вопрос</p>
+        <p>
+          KAN обучают <strong>с нуля под задачу</strong>: данные → нормализация в
+          [−1, 1] → функция потерь → обратное распространение по коэффициентам
+          сплайнов → оптимизатор. Pretraining для этого не обязателен.
+          <strong>Pretrained KAN</strong> — это просто чекпоинт, обученный на
+          широком наборе и дообучаемый на цели. Универсального публичного такого
+          чекпоинта пока нет, но <em>свой</em> доменный претрейн сделать можно.
+        </p>
+      </div>
+
+      <h2 id="s8-1" data-num="8.1">Что такое претрейн</h2>
+
+      <p>
+        <strong>Претрейн</strong> (предобучение) — это первый этап, на котором
+        модель учится на большом и разнообразном наборе данных не столько
+        решать конкретную задачу, сколько строить полезные внутренние
+        представления. Затем следует <strong>дообучение</strong> (fine-tuning)
+        на узкой задаче или на предпочтениях пользователей.
+      </p>
+
+      <p>
+        У языковых моделей претрейн выглядит так: берут огромный корпус текста,
+        вырезают часть последовательности и просят модель предсказать следующее
+        слово. Это <em>самообучение</em>: правильный ответ уже содержится в
+        тексте, размечать вручную ничего не нужно. На триллионах токенов модель
+        вынужденно выучивает грамматику, факты, стили и связи между понятиями.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Этап</th><th>Данные</th><th>Цель</th><th>Что получаем</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Pretraining</td><td>Огромный неразмеченный корпус</td><td>Предсказывать следующий токен / восстанавливать часть входа</td><td>Общие представления и «базу знаний»</td></tr>
+            <tr><td>Supervised fine-tuning</td><td>Пары «инструкция → ответ»</td><td>Следовать инструкциям</td><td>Ассистента, а не просто продолжателя текста</td></tr>
+            <tr><td>RLHF / DPO</td><td>Сравнения ответов людьми</td><td>Учитывать предпочтения</td><td>Более полезное и безопасное поведение</td></tr>
+            <tr><td>Task fine-tuning</td><td>Небольшой размеченный набор</td><td>Решить конкретную задачу</td><td>Специализированную модель</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        В маленьком масштабе идея та же: сначала модель видит много похожих
+        примеров и «настраивает» свои функции под предметную область, затем мы
+        дообучаем её на точной цели. В разделе 8.5 мы проведём такой эксперимент
+        за полсекунды и увидим, что warm start может дать ускорение в десятки раз
+        по ошибке за одинаковое число шагов.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Претрейн ≠ магическая база знаний</p>
+        <p>
+          Предобученная модель не «знает» предмет в человеческом смысле. Она
+          выучила статистические закономерности данных. Если данных о вашей
+          задаче не было, претрейн не заменит сбор данных и проверку.
+        </p>
+      </div>
+
+      <h2 id="s8-2" data-num="8.2">LLM за одну страницу</h2>
+
+      <p>
+        Большая языковая модель (LLM) — это нейросеть, которая предсказывает
+        следующий <strong>токен</strong>. Токен — не обязательно слово: это
+        кусочек текста, полученный токенизатором (например, BPE). Текст
+        превращается в последовательность целых чисел, для каждого числа берётся
+        обучаемый вектор-эмбеддинг, и дальше начинается стек трансформерных
+        блоков.
+      </p>
+
+      <p>
+        <strong>Self-attention</strong> позволяет каждому токену «посмотреть» на
+        другие токены контекста и взвесить их важность. <strong>MLP</strong>
+        внутри блока обрабатывает каждый токен независимо, добавляя нелинейные
+        преобразования. Стек из десятков таких блоков и даёт модели способность
+        связывать далёкие части текста.
+      </p>
+
+      <p>
+        После претрейна модель умеет продолжать текст, но ещё не следует
+        инструкциям. Затем идут supervised fine-tuning на парах «вопрос-ответ» и
+        выравнивание по предпочтениям (RLHF/DPO). «Ум» ассистента — это сумма
+        архитектуры, объёма данных, вычислений и посттренировки, а не одна
+        удачная формула.
+      </p>
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 720 250" role="img" aria-label="Схема LLM: токены, эмбеддинги, трансформерные блоки, вероятности">
+            <g font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)" text-anchor="middle">
+              <text x="70" y="24">текст</text>
+              <text x="210" y="24">токены</text>
+              <text x="370" y="24">эмбеддинги</text>
+              <text x="540" y="24">трансформер × L</text>
+              <text x="670" y="24">вероятности</text>
+            </g>
+
+            <rect x="20" y="42" width="100" height="58" rx="8" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+            <text x="70" y="76" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="13" fill="var(--ink)">«KAN — это…»</text>
+
+            <rect x="150" y="42" width="120" height="58" rx="8" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <text x="210" y="76" text-anchor="middle" font-family="var(--font-mono)" font-size="12" fill="var(--accent)">[KAN][—][это]</text>
+
+            <rect x="300" y="42" width="140" height="58" rx="8" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+            <g fill="var(--accent-2)">
+              <rect x="318" y="60" width="8" height="22"/><rect x="332" y="56" width="8" height="26"/>
+              <rect x="346" y="64" width="8" height="18"/><rect x="360" y="54" width="8" height="28"/>
+              <rect x="374" y="62" width="8" height="20"/><rect x="388" y="58" width="8" height="24"/>
+              <rect x="402" y="66" width="8" height="16"/><rect x="416" y="60" width="8" height="22"/>
+            </g>
+
+            <rect x="470" y="42" width="140" height="58" rx="8" fill="var(--accent-2-soft)" stroke="var(--accent-2)"/>
+            <text x="540" y="68" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--accent-2)">attention</text>
+            <text x="540" y="84" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--accent-2)">+ MLP</text>
+
+            <path d="M120 71 H148 M270 71 H298 M440 71 H468 M610 71 H638" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#arrow)"/>
+
+            <rect x="640" y="42" width="60" height="58" rx="8" fill="var(--surface-2)" stroke="var(--line-strong)"/>
+            <text x="670" y="76" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">p(next)</text>
+
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0 0 L10 5 L0 10 z" fill="var(--muted)"/>
+              </marker>
+            </defs>
+
+            <text x="360" y="145" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-soft)">
+              Один блок: self-attention смешивает информацию между токенами,
+            </text>
+            <text x="360" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="var(--ink-soft)">
+              затем MLP (feed-forward) преобразует каждый токен отдельно.
+            </text>
+            <text x="360" y="196" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">
+              Именно MLP внутри блока — кандидат на замену KAN в исследованиях.
+            </text>
+            <text x="360" y="220" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">
+              Обучение: минимизируем кросс-энтропию на следующем токене.
+            </text>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 8.1.</strong> Упрощённая схема LLM. KAN может заменить MLP-блок, но это исследовательское направление, а не готовая замена.</figcaption>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Компонент LLM</th><th>Что делает</th><th>Можно ли заменить KAN</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Токенизатор</td><td>Текст → целые числа</td><td>Нет, это не нейросеть</td></tr>
+            <tr><td>Эмбеддинги</td><td>Числа → векторы</td><td>Технически да, но обычно не нужно</td></tr>
+            <tr><td>Self-attention</td><td>Смешивает информацию между токенами</td><td>Исследования, не стандарт</td></tr>
+            <tr><td>MLP / feed-forward</td><td>Нелинейно преобразует каждый токен</td><td>Основной кандидат для KAN-экспериментов</td></tr>
+            <tr><td>Голова предсказания</td><td>Вектор → вероятности токенов</td><td>Можно, но выигрыш неочевиден</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Почему KAN пока не заменяет LLM</p>
+        <p>
+          Трансформер обучается на триллионах токенов и оптимизирован под
+          гигантские матричные умножения на GPU. KAN на каждом ребре вычисляет
+          базисные функции — это дороже на параметр. Заменить все MLP-блоки в
+          LLM на KAN технически можно, но выигрыш по качеству и цене пока не
+          доказан. Это активная область исследований, а не готовый рецепт.
+        </p>
+      </div>
+      <h2 id="s8-3" data-num="8.3">С нуля, претрейн и дообучение: чем отличаются</h2>
+
+      <p>
+        Эти три режима часто смешивают. Разница — в том, какие данные доступны и
+        что именно мы хотим получить.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Режим</th><th>Данные</th><th>Стоимость</th><th>Когда применяют</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>С нуля</strong></td>
+              <td>Размеченные данные задачи</td>
+              <td>Низкая/средняя</td>
+              <td>Узкая задача, данных достаточно, нужна полная свобода</td>
+            </tr>
+            <tr>
+              <td><strong>Претрейн</strong></td>
+              <td>Большой неразмеченный или синтетический корпус</td>
+              <td>Высокая</td>
+              <td>Нужны общие представления для целого класса задач</td>
+            </tr>
+            <tr>
+              <td><strong>Дообучение</strong></td>
+              <td>Небольшой размеченный набор</td>
+              <td>Низкая</td>
+              <td>Есть предобученная модель и мало данных</td>
+            </tr>
+            <tr>
+              <td><strong>Дистилляция</strong></td>
+              <td>Выходы учителя (MLP, LLM, ансамбля)</td>
+              <td>Средняя</td>
+              <td>Нужна компактная модель, повторяющая поведение большой</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        В нашем Iris-примере мы обучали с нуля: 120 примеров, 111 параметров,
+        несколько секунд. Претрейн здесь не нужен — данных слишком мало, а задача
+        слишком узкая. Претрейн оправдан, когда есть большой корпус и надежда,
+        что выученные закономерности перенесутся на несколько задач.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Warm start — это не полноценный претрейн</p>
+        <p>
+          Если вы инициализировали KAN весами, обученными на похожих функциях,
+          вы сделали «тёплый старт». Это полезно и дёшево, но не даёт тех же
+          свойств, что претрейн на миллиардах примеров: общих представлений,
+          переноса между доменами и способности к zero-shot поведению.
+        </p>
+      </div>
+
+      <h3 id="s8-3-1">Как обучать KAN на практике</h3>
+
+      <p>
+        Отсутствие универсального pretrained-чекпоинта не мешает обучать KAN.
+        Есть четыре рабочие схемы, и первая — основная. В коде ниже
+        <code>S</code> — заранее посчитанный базис B-сплайнов,
+        <code>Bv</code> — значения SiLU, <code>Y</code> — метки; так же устроена
+        глава 7.
+      </p>
+
+      <ol>
+        <li>
+          <strong>С нуля под задачу.</strong> Нормализуем входы в [−1, 1],
+          задаём функцию потерь, считаем градиенты по коэффициентам сплайнов и
+          обновляем их Adam. Именно так обучена Iris KAN в главе 7: 120
+          примеров, 3000 шагов, 111 параметров. Никакого претрейна не нужно.
+        </li>
+        <li>
+          <strong>Доменный претрейн + дообучение.</strong> Сначала учим KAN на
+          большом наборе похожих задач (симуляции, исторические данные, семейство
+          функций), сохраняем чекпоинт, затем дообучаем на цели с меньшим
+          learning rate. Мини-пример — в разделе 8.5.
+        </li>
+        <li>
+          <strong>Дистилляция.</strong> Большая модель (MLP, LLM, ансамбль)
+          генерирует ответы на много входов; KAN учится их повторять. Это способ
+          получить компактную модель, но KAN наследует и ошибки учителя.
+        </li>
+        <li>
+          <strong>Гибрид.</strong> KAN ставят головой, адаптером или заменяют
+          MLP-блок внутри трансформера. Это исследовательская схема: она требует
+          знания LLM, но не отменяет обычное обучение KAN.
+        </li>
+      </ol>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">kan_training_modes.py — псевдокод</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python"># 1. С нуля: основной путь (так работает глава 7)
+model = KANClassifier(n_in=4, n_out=3, nbasis=8)
+model.train(S, Bv, Y, epochs=3000, lr=0.02)
+
+# 2. Доменный претрейн: сначала широкий набор, потом цель
+model = KANClassifier(n_in=4, n_out=3, nbasis=8)
+model.train(domain_S, domain_B, domain_Y, epochs=20000, lr=0.02)
+model.train(target_S, target_B, target_Y, epochs=500, lr=0.003)
+
+# 3. Дистилляция: KAN учится на выходах учителя
+# S_unlabeled, Bv_unlabeled — заранее подготовленный базис и SiLU
+teacher_out = teacher.predict(X_unlabeled)
+model.train(S_unlabeled, Bv_unlabeled, teacher_out, epochs=3000)</code></pre>
+      </div>
+
+      <p class="demo-note">
+        Это схема, а не готовый файл: у дистилляции своя функция потерь.
+        Рабочие примеры — глава 7 и <code>code/</code>.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Не путайте «pretrained KAN» и «pretrained LLM»</p>
+        <p>
+          Чекпоинт KAN, обученный на вашем домене, — это полезный артефакт. Но он
+          не становится универсальным ассистентом: у него нет общего языка
+          входа, триллионов токенов и посттренировки. Называйте его честно:
+          «доменная pretrained KAN» или «KAN, обученная на данных X».
+        </p>
+      </div>
+
+      <h2 id="s8-4" data-num="8.4">Существует ли pretrained KAN?</h2>
+
+      <p>
+        Короткий ответ: <strong>универсальной предобученной KAN, как ChatGPT для
+        текста, сегодня нет</strong>. Есть обученные KAN для конкретных задач,
+        есть исследовательские работы и чекпоинты, но нет стандартной
+        «фундаментальной KAN», которую можно скачать и дообучить на что угодно.
+      </p>
+
+      <p>
+        Почему так? У LLM есть удобный общий интерфейс — последовательность
+        токенов и предсказание следующего. У KAN нет единого токенизатора и
+        единого формата входа: одна и та же архитектура по-разному применяется к
+        таблицам, изображениям, PDE и временным рядам. Кроме того, вычисление
+        сплайнов дороже матричных умножений, а масштабирование KAN до триллионов
+        параметров пока не отработано.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Подход</th><th>Что делают</th><th>Зрелость</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Доменный претрейн</td><td>Учат KAN на большом наборе функций/данных предметной области, затем дообучают</td><td>Практично для узких задач</td></tr>
+            <tr><td>Дистилляция</td><td>KAN учится повторять выходы MLP/LLM на большом наборе входов</td><td>Исследования и инженерия</td></tr>
+            <tr><td>KAN-голова / адаптер</td><td>KAN добавляют к трансформеру вместо выходного MLP</td><td>Исследования</td></tr>
+            <tr><td>Замена FFN в трансформере</td><td>MLP-блок заменяют слоем KAN</td><td>Ранние исследования</td></tr>
+            <tr><td>Универсальная pretrained KAN</td><td>Один чекпоинт для многих задач</td><td>Пока нет</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Поэтому честная формулировка для вашего проекта звучит так: можно
+        обучить <em>свою</em> KAN на своём домене и получить полезную модель.
+        Можно даже сделать «претрейн» на большом наборе похожих задач. Но
+        называть это «pretrained KAN как LLM» и обещать универсальный интеллект
+        нельзя.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Что нужно, чтобы появилась «фундаментальная KAN»</p>
+        <p>
+          Единый формат данных и архитектуры, огромные корпуса, отработанное
+          масштабирование на GPU/TPU, публичные бенчмарки, чекпоинты и
+          экосистема. Это годы работы многих команд, а не один скрипт. Пока
+          реалистичный путь — узкая задача, свои данные и честная оценка.
+        </p>
+      </div>
+      <h2 id="s8-5" data-num="8.5">Мини-эксперимент: pretrain → fine-tune</h2>
+
+      <p>
+        Проверим идею на самой маленькой модели: KAN
+        <span class="math">1 → 1</span> с <span class="math">G = 8</span>,
+        <span class="math">k = 3</span>. Цель — <span class="math">sin(πx)</span>
+        на <span class="math">[−1, 1]</span>. Сначала «претрейн»: 3000 шагов на
+        шести зашумлённых версиях этой же функции (шум
+        <span class="math">σ = 0.25</span>). Затем fine-tuning на чистой цели —
+        всего 200 шагов. Контроль — обучение с нуля те же 200 шагов.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">pretrain_finetune_demo.py — суть</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">clean = [math.sin(math.pi * x) for x in XS]
+noisy = [[v + rng.gauss(0, 0.25) for v in clean] for _ in range(6)]
+
+pre = Model(seed=1)
+for step in range(3000):                 # этап 1: доменный pretrain
+    pre.step(noisy[step % len(noisy)], lr=0.08)
+
+for step in range(200):                  # этап 2: fine-tune
+    pre.step(clean, lr=0.05)
+
+fresh = Model(seed=2)
+for step in range(200):                  # контроль: с нуля
+    fresh.step(clean, lr=0.05)</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">реальный вывод на CPU</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/pretrain_finetune_demo.py
+
+clean target MSE
+pretrained at start    : 0.00072344
+fresh at start         : 0.31260105
+pretrained after 200 ft: 0.00028973
+fresh after 200 ft     : 0.01465801
+improvement ratio      : 50.6x</code></pre>
+      </div>
+
+      <p>
+        Читается так: до дообучения «предобученная» модель уже ошибается в
+        400 раз меньше, потому что видела похожие кривые. После 200 шагов
+        fine-tuning её ошибка <span class="math">2.9·10<sup>−4</sup></span>
+        против <span class="math">1.5·10<sup>−2</sup></span> у модели с нуля —
+        выигрыш примерно в 50 раз при том же бюджете шагов.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Модель</th><th>MSE до fine-tune</th><th>MSE после 200 шагов</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Случайная инициализация</td><td>0.3126</td><td>0.01466</td></tr>
+            <tr><td>После доменного претрейна</td><td>0.000723</td><td>0.000290</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Что этот эксперимент не доказывает</p>
+        <p>
+          Здесь претрейн — это обучение на зашумлённых версиях той же цели.
+          Настоящий LLM-претрейн учится на триллионах разнородных токенов и
+          переносится на задачи, которых не было в явном виде. Наш результат
+          показывает только пользу warm start в узком домене. Не экстраполируйте
+          его на «KAN выучит всё».
+        </p>
+      </div>
+
+      <h2 id="s8-6" data-num="8.6">Рецепт претрейна и дообучения KAN</h2>
+
+      <p>
+        Если вы хотите повторить двухэтапное обучение на своём домене, вот
+        рабочий порядок. Он не гарантирует успех, но избавляет от типичных
+        ошибок.
+      </p>
+
+      <ol>
+        <li>
+          <strong>Соберите доменный корпус.</strong> Это могут быть функции из
+          семейства, симуляционные данные, исторические ряды, таблицы. Чем шире
+          корпус, тем полезнее представления — но тем важнее их совпадение с
+          целевой задачей.
+        </li>
+        <li>
+          <strong>Зафиксируйте архитектуру и нормализацию.</strong> Один и тот же
+          базис, диапазон входов и порядок признаков на обоих этапах. Иначе
+          веса не перенесутся.
+        </li>
+        <li>
+          <strong>Обучите на большом этапе.</strong> Следите за валидацией,
+          сохраняйте чекпоинты, используйте раннюю остановку.
+        </li>
+        <li>
+          <strong>Дообучите на цели.</strong> Меньший learning rate (обычно в
+          3–10 раз), меньше эпох, возможна заморозка части слоёв.
+        </li>
+        <li>
+          <strong>Сравните с нулём.</strong> Обязательный контроль: та же
+          архитектура, тот же бюджет, случайная инициализация. Иначе вы не
+          узнаете, помог ли претрейн.
+        </li>
+      </ol>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Параметр</th><th>Претрейн</th><th>Дообучение</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Данные</td><td>Широкий домен</td><td>Узкая цель</td></tr>
+            <tr><td>Learning rate</td><td>Базовый</td><td>В 3–10 раз меньше</td></tr>
+            <tr><td>Эпохи</td><td>Много</td><td>Мало, с ранней остановкой</td></tr>
+            <tr><td>Регуляризация</td><td>Можно сильнее</td><td>Слабее, чтобы адаптироваться</td></tr>
+            <tr><td>Контроль</td><td>Валидация домена</td><td>Валидация цели + тест</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout note">
+        <p class="callout-title">Катастрофическое забывание</p>
+        <p>
+          При дообучении модель может «забыть» то, что выучила на претрейне.
+          Помогают меньший learning rate, заморозка нижних слоёв, смешивание
+          доменных и целевых примеров и ранняя остановка. Для KAN это особенно
+          заметно на маленьких наборах: сплайны быстро перестраиваются под
+          новую цель.
+        </p>
+      </div>
+      <h2 id="s8-7" data-num="8.7">Масштаб и честное значение слова «умный»</h2>
+
+      <p>
+        LLM обучают на триллионах токенов и десятках тысяч GPU. KAN на каждом
+        ребре считает базисные функции, поэтому масштабировать её до такого же
+        числа параметров дорого. Из этого не следует, что KAN бесполезна: просто
+        её сильная сторона — не «заменить всё», а решать узкие задачи компактно
+        и интерпретируемо.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Что нужно для «умного» ассистента</th><th>LLM</th><th>KAN сегодня</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Единый формат входа</td><td>Токены текста</td><td>Разный для таблиц, изображений, PDE</td></tr>
+            <tr><td>Масштабирование</td><td>Отработано на GPU</td><td>Дороже на параметр, исследуется</td></tr>
+            <tr><td>Предобученные чекпоинты</td><td>Есть</td><td>Универсальных нет</td></tr>
+            <tr><td>Интерпретируемость</td><td>Постфактум</td><td>Сильная сторона</td></tr>
+            <tr><td>Типичная задача</td><td>Язык, диалог, код</td><td>Гладкая регрессия, формулы, наука</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Реалистичные пути получить пользу уже сейчас:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Узкая KAN-модель</strong> для таблицы, датчика, формулы или
+          небольшого изображения. Именно такую мы обучили на Iris и выложили в
+          демо.
+        </li>
+        <li>
+          <strong>Гибрид:</strong> LLM понимает запрос и вызывает KAN-сервис,
+          который считает числовой прогноз. Так «умный» интерфейс сочетается с
+          интерпретируемой моделью.
+        </li>
+        <li>
+          <strong>Дистилляция:</strong> большая модель генерирует ответы, KAN
+          учится их повторять в компактном виде. Это удешевляет инференс, но
+          требует много данных и аккуратной проверки.
+        </li>
+        <li>
+          <strong>Исследование:</strong> KAN внутри трансформера, KAN для PDE,
+          графовые и свёрточные KAN. Здесь ещё нет готовых рецептов.
+        </li>
+      </ul>
+
+      <div class="callout warning">
+        <p class="callout-title">Честная планка</p>
+        <p>
+          «С 0 до своего реального KAN, которым пользуются люди» — достижимо для
+          узкой задачи: данные → обучение → оценка → сервис. «С 0 до KAN,
+          который заменит ChatGPT» — нет, это не задача одной книги и не
+          свойство архитектуры. Мы выбрали первый путь и довели его до рабочей
+          модели; второй требует команды, данных и вычислений.
+        </p>
+      </div>
+
+      <h2 id="s8-8" data-num="8.8">Упражнения</h2>
+
+      <ol>
+        <li>
+          Чем претрейн отличается от дообучения? Приведите по одному примеру
+          данных для каждого этапа.
+        </li>
+        <li>
+          Почему языковая модель может учиться на неразмеченном тексте? Что
+          служит правильным ответом?
+        </li>
+        <li>
+          Почему универсальной pretrained KAN пока нет? Назовите две причины.
+        </li>
+        <li>
+          В нашем эксперименте pretrained-модель лучше после 200 шагов. Значит ли
+          это, что претрейн всегда помогает?
+        </li>
+        <li>
+          Что такое катастрофическое забывание и как его смягчить?
+        </li>
+        <li>
+          Как дистиллировать LLM в KAN? Опишите шаги и главный риск.
+        </li>
+        <li>
+          Что нужно добавить к модели, чтобы «люди могли пользоваться» ей?
+        </li>
+      </ol>
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            Претрейн — обучение на широком корпусе (например, текст или
+            симуляции) для общих представлений; дообучение — на узком наборе для
+            конкретной задачи. Примеры: корпус текстов / 120 измерений Iris.
+          </li>
+          <li>
+            Ответ уже содержится во входе: следующее слово, маскированный
+            фрагмент, восстановление изображения. Разметка не нужна, поэтому
+            можно использовать почти любой текст.
+          </li>
+          <li>
+            Нет единого формата входа и архитектуры; вычисление сплайнов дороже
+            матричных умножений; масштабирование до триллионов параметров не
+            отработано; нет общей экосистемы чекпоинтов и бенчмарков.
+          </li>
+          <li>
+            Нет. Помогло потому, что pretrain-данные были похожи на цель (шумные
+            версии той же функции). На другом домене warm start может навредить
+            или не дать выигрыша. Нужен контрольный эксперимент.
+          </li>
+          <li>
+            Модель забывает прежние знания при дообучении на новой задаче.
+            Помогают меньший learning rate, заморозка части слоёв, смешивание
+            данных и ранняя остановка.
+          </li>
+          <li>
+            Сгенерировать входы, получить выходы учителя, обучить KAN на парах
+            «вход → выход учителя», проверить на отдельных данных. Риск: KAN
+            повторит ошибки учителя и не выучит то, чего нет в обучающем
+            покрытии.
+          </li>
+          <li>
+            Сохранить веса, сделать инференс, добавить валидацию входа,
+            интерфейс или API, мониторинг, документацию и ограничения. Этому
+            посвящена глава 9.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s8-9" data-num="8.9">Итоги главы</h2>
+
+      <ul>
+        <li>
+          Претрейн — первый этап обучения на широком корпусе; дообучение
+          адаптирует модель к цели.
+        </li>
+        <li>
+          LLM — это трансформер, предсказывающий следующий токен; «ум» появляется
+          из данных, масштаба и посттренировки.
+        </li>
+        <li>
+          Универсальной pretrained KAN нет; реалистичны доменный претрейн,
+          дистилляция и гибридные схемы.
+        </li>
+        <li>
+          Warm start может дать десятки раз выигрыша по ошибке за тот же бюджет
+          шагов, но только на похожем домене.
+        </li>
+        <li>
+          «Умный KAN, которым пользуются люди» — это узкая задача плюс
+          инженерия: данные, оценка, сервис.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          Осталось сделать последний шаг: превратить модель в сервис, которым
+          реально можно пользоваться. В главе 9 — сохранение, статическое демо,
+          HTTP API, Docker, мониторинг и капстоун-проект.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-7.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">7. Реальная KAN на Iris</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-9.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">9. Развёртывание и капстоун</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть III · глава 8 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-9.html">Глава 9 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+
+
+
+

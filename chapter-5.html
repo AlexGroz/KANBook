@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 5. KAN на практике — KANBook</title>
+<meta name="description" content="Полная реализация KAN на PyTorch, обучение на игрушечных функциях, grid extension, сравнение с MLP и интерпретация через разреживание и символическую регрессию.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 5 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-4.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-6.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">5. KAN на практике</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html"><strong>5</strong></a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть I · Основы</p>
+      <h1>KAN на практике: код, обучение, интерпретация</h1>
+      <p class="lead">
+        Теория проверяется экспериментом. Соберём KAN из сплайнов, обучим его на
+        игрушечных функциях, сравним с MLP по-честному и попробуем превратить
+        выученные рёбра в формулу.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 5</strong> из 9</span>
+        <span class="meta-chip">≈ 90 минут</span>
+        <span class="meta-chip">практика · PyTorch · CPU</span>
+        <span class="meta-chip">сложность: средняя</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Чего я не могу создать, того я не понимаю.
+        <cite>Ричард Фейнман — надпись на доске в его кабинете</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Два уровня реализации</p>
+        <p>
+          <strong>Без зависимостей:</strong> запустите
+          <code>code/kan_demo_pure.py</code> — это займёт секунду и не требует
+          PyTorch. <strong>С PyTorch:</strong> блоки с <code>nn.Module</code>
+          нужны для профессионала и для масштабирования KAN. Прочитайте их после
+          чистого Python, но не вместо него. В файле около 160 строк — не
+          разбирайте все сразу: сначала запустите и посмотрите вывод, потом
+          читайте 5.2 по частям.
+        </p>
+      </div>
+
+      <h2 id="s5-1" data-num="5.1">Что мы построим</h2>
+
+      <p>
+        В этой главе мы соберём минимальную, но полноценную KAN: базис
+        B-сплайнов, слой, модель, цикл обучения, уточнение сетки и
+        символическую проверку. Всё рассчитано на CPU: игрушечные задачи
+        занимают секунды, а не часы.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Файл</th><th>Что внутри</th><th>Зависимости</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>code/kan_demo_pure.py</code></td>
+              <td>KAN 1 → 1 на чистом Python: базис, forward, Adam по аналитическим градиентам.</td>
+              <td>Нет (только стандартная библиотека)</td>
+            </tr>
+            <tr>
+              <td><code>code/kan_torch.py</code></td>
+              <td>Полная реализация на PyTorch: слои, grid extension, L1, символическая проверка.</td>
+              <td><code>torch ≥ 2.0</code></td>
+            </tr>
+            <tr>
+              <td><code>code/README.md</code></td>
+              <td>Команды запуска и ожидаемые результаты.</td>
+              <td>—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Начните с чистого Python — он проверяет математику без установки тяжёлых
+        пакетов. Затем переходите к PyTorch: там те же формулы, но с
+        автоматическим дифференцированием и пакетной обработкой.
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Правило эксперимента</p>
+        <p>
+          Меняйте одну вещь за раз. Зафиксируйте seed, разделение данных и число
+          шагов. Иначе невозможно понять, что именно улучшило результат:
+          архитектура, оптимизатор или случайность.
+        </p>
+      </div>
+
+      <h2 id="s5-2" data-num="5.2">Реализация: базис, слой, модель</h2>
+
+      <p>
+        Начнём с базиса. Функция принимает тензор входов произвольной формы
+        <code>(..., n_in)</code> и возвращает значения всех базисных функций:
+        <code>(..., n_in, G+k)</code>. Внутри — та же рекурсия Кокса–де Бура,
+        что в главе 4, но векторизованная по точкам.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">basis.py — ядро B-сплайнов</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">def forward(self, x):
+    t, k, m = self.knots, self.degree, self.knots.numel()
+    shape = x.shape
+    xf = x.reshape(-1)
+
+    # степень 0: индикаторы интервалов
+    B = ((xf[:, None] >= t[None, :-1]) &
+         (xf[:, None] <  t[None, 1:])).to(x.dtype)
+    at_right = torch.isclose(xf, t[-1])
+    if at_right.any():
+        B[at_right, m - k - 2] = 1.0
+
+    # рекурсия Кокса–де Бура
+    for d in range(1, k + 1):
+        den1 = t[d:m - 1] - t[:m - d - 1]
+        den2 = t[d + 1:m] - t[1:m - d]
+        c1 = (xf[:, None] - t[None, :m - d - 1]) / den1.clamp_min(1e-12)
+        c2 = (t[None, d + 1:m] - xf[:, None]) / den2.clamp_min(1e-12)
+        c1 = torch.where(den1 > 1e-12, c1, torch.zeros_like(c1))
+        c2 = torch.where(den2 > 1e-12, c2, torch.zeros_like(c2))
+        B = c1 * B[:, :m - d - 1] + c2 * B[:, 1:m - d]
+
+    return B.clamp_min(0.0).reshape(*shape, self.n_basis)</code></pre>
+      </div>
+
+      <p>
+        Тонкость — правый конец отрезка. По соглашению
+        <span class="math">[t<sub>i</sub>, t<sub>i+1</sub>)</span> точка
+        <span class="math">x = 1</span> не попадает ни в один интервал нулевой
+        степени, поэтому её вручную относят к последнему ненулевому интервалу.
+        Без этого базис в точке 1 обнулился бы и нарушил разбиение единицы.
+      </p>
+
+      <p>
+        Теперь слой. Он хранит коэффициенты формы
+        <span class="math">(n<sub>out</sub>, n<sub>in</sub>, G+k)</span> и базовые
+        веса <span class="math">(n<sub>out</sub>, n<sub>in</sub>)</span>.
+        Прямой проход — это два тензорных произведения.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">layer.py — слой KAN</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">class KANLayer(nn.Module):
+    def __init__(self, n_in, n_out, grid_size=5, degree=3):
+        super().__init__()
+        self.basis = BSplineBasis(grid_size, degree)
+        self.coef = nn.Parameter(torch.empty(n_out, n_in, self.basis.n_basis))
+        nn.init.normal_(self.coef, mean=0.0, std=0.1)
+        self.base_weight = nn.Parameter(torch.ones(n_out, n_in))
+        self.bias = nn.Parameter(torch.zeros(n_out))
+        self.scale = 1.0 / math.sqrt(n_in)
+
+    def forward(self, x):
+        basis = self.basis(x)                          # (B, n_in, G+k)
+        spline = torch.einsum("bik,oik->bo", basis, self.coef)
+        base = F.silu(x) @ self.base_weight.T           # (B, n_out)
+        return (base + spline) * self.scale + self.bias</code></pre>
+      </div>
+
+      <p>
+        Запись <code>einsum("bik,oik-&gt;bo")</code> читается так: для каждого
+        примера <code>b</code> и каждого выхода <code>o</code> просуммировать по
+        входу <code>i</code> и базису <code>k</code> произведение
+        <code>basis[b,i,k] * coef[o,i,k]</code>. Это ровно
+        <span class="math">Σ<sub>i</sub> Σ<sub>k</sub> c<sub>oik</sub>B<sub>k</sub>(x<sub>bi</sub>)</span>.
+      </p>
+
+      <p>
+        Модель — просто список слоёв. Масштаб
+        <span class="math">1/√n<sub>in</sub></span> удерживает дисперсию сигнала
+        примерно постоянной при переходе между слоями — тот же принцип, что в
+        инициализации Xavier/He.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">model.py — композиция слоёв</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">class KAN(nn.Module):
+    def __init__(self, widths, grid_size=5, degree=3):
+        super().__init__()
+        self.layers = nn.ModuleList(
+            KANLayer(widths[i], widths[i + 1], grid_size, degree)
+            for i in range(len(widths) - 1)
+        )
+
+    def forward(self, x):
+        for layer in self.layers:
+            x = layer(x)
+        return x</code></pre>
+      </div>
+      <h2 id="s5-3" data-num="5.3">Эксперимент 1: одномерная функция</h2>
+
+      <p>
+        Первая задача — <span class="math">f(x) = sin(πx)</span> на
+        <span class="math">[−1, 1]</span>. Сеть <span class="math">1 → 1</span>
+        при <span class="math">G = 5</span>, <span class="math">k = 3</span>
+        содержит всего 10 параметров: 8 коэффициентов сплайна, базовый вес и
+        смещение.
+      </p>
+
+      <p>
+        В версии без зависимостей коэффициенты обучаются аналитическими
+        градиентами. Для MSE производная по коэффициенту сплайна выглядит так:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂L</span><span class="den">∂c<sub>k</sub></span></span>
+          = <span class="frac"><span class="num">2</span><span class="den">N</span></span>
+          <span class="big-op">Σ<sub>i</sub></span> (ŷ<sub>i</sub> − y<sub>i</sub>) B<sub>k</sub>(x<sub>i</sub>)
+        </div>
+        <div class="formula-caption"><strong>Градиент по коэффициенту сплайна.</strong> Базис играет роль «входа» линейной модели.</div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">kan_demo_pure.py — реальный вывод</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/kan_demo_pure.py
+
+KAN 1 -> 1, без зависимостей
+сетка G = 5, степень k = 3, базисных функций = 8
+параметров: 8 коэффициентов + 1 базовый вес + 1 смещение = 10
+MSE до обучения: 0.270003
+MSE после 4000 шагов: 0.00000707
+
+  x      цель      предсказание
+-1.00   -0.00000   -0.00178
+-0.50   -1.00000   -0.99901
++0.00   +0.00000   -0.00002
++0.50   +1.00000   +0.99899
++1.00   +0.00000   +0.00179</code></pre>
+      </div>
+
+      <p>
+        Десяти параметров достаточно, чтобы уменьшить ошибку на пять порядков.
+        Время работы — около секунды на CPU. Это хорошая отправная точка:
+        если ваш KAN не может выучить такую функцию, проблема не в архитектуре,
+        а в коде или настройках обучения.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Почему это линейная задача</p>
+        <p>
+          При фиксированном базисе сплайн линеен по коэффициентам
+          <span class="math">c</span>. Поэтому для одного слоя 1 → 1 обучение —
+          это обычная линейная регрессия с базисом из B-сплайнов. Вся сложность
+          KAN появляется, когда слоёв несколько и функции входят друг в друга.
+        </p>
+      </div>
+
+      <h3 id="s5-3-1">То же самое на PyTorch</h3>
+
+      <p>
+        Полная версия использует автоматическое дифференцирование и работает с
+        пакетами:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/kan_torch.py --task 1d --steps 1500</code></pre>
+      </div>
+
+      <p>
+        Скрипт печатает MSE каждые 300 шагов и в конце — итоговую ошибку и
+        результат символической подгонки ребра. На этой задаче ошибка быстро
+        уходит ниже <span class="math">10<sup>−3</sup></span>, а при достаточном
+        числе шагов — к <span class="math">10<sup>−5</sup></span>. Конкретные
+        числа зависят от seed и версии PyTorch, поэтому сравнивайте конфигурации
+        при одинаковых условиях.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Не гонитесь за последней цифрой</p>
+        <p>
+          На игрушечной задаче легко получить почти нулевую ошибку и решить, что
+          метод «решает всё». Проверяйте обобщение на отдельной выборке и
+          смотрите на форму выученной функции, а не только на MSE.
+        </p>
+      </div>
+      <h2 id="s5-4" data-num="5.4">Сравнение с MLP: как не обмануть себя</h2>
+
+      <p>
+        Сравнивать архитектуры «по числу параметров» или «по числу шагов» —
+        недостаточно. Честный протокол фиксирует несколько вещей одновременно.
+      </p>
+
+      <ul>
+        <li>
+          <strong>Одинаковые данные и splits.</strong> Один и тот же train/val/test,
+          один и тот же seed (или несколько seed).
+        </li>
+        <li>
+          <strong>Сопоставимый бюджет.</strong> Либо равное число параметров, либо
+          равное время обучения, либо равное число шагов. Нельзя сравнивать
+          «KAN за 5000 шагов» с «MLP за 500».
+        </li>
+        <li>
+          <strong>Одинаковая настройка.</strong> Хотя бы грубый подбор learning rate
+          для обеих моделей.
+        </li>
+        <li>
+          <strong>Несколько запусков.</strong> Разброс по seed часто больше, чем
+          разница между архитектурами на игрушечной задаче.
+        </li>
+      </ul>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Задача</th><th>KAN</th><th>MLP</th><th>Комментарий</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="math">sin(πx)</span>, 1 → 1</td>
+              <td>10 параметров</td>
+              <td>25 (1→8→1) или 49 (1→16→1)</td>
+              <td>KAN компактнее, но каждый шаг дороже</td>
+            </tr>
+            <tr>
+              <td><span class="math">exp(sin πx + y²)</span>, 2 → 1</td>
+              <td>85 параметров<br>(2→3→1, G=5)</td>
+              <td>105 (2→8→8→1) или 337 (2→16→16→1)</td>
+              <td>На гладкой функции KAN выгоден по параметрам</td>
+            </tr>
+            <tr>
+              <td>Табличные данные, 10 признаков</td>
+              <td>~1 000 параметров</td>
+              <td>~121 (10→10→1)</td>
+              <td>Зависит от гладкости и объёма данных</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        В оригинальной работе Лю и др. (2024) показали, что на гладких
+        игрушечных функциях KAN масштабируется лучше MLP: ошибка падает быстрее
+        при росте числа параметров. Это сильный результат, но он относится к
+        задачам определённого типа.
+      </p>
+
+      <p>
+        Независимое сравнение Yu et al. («KAN or MLP: A Fairer Comparison»,
+        2024) даёт более сдержанную картину: на компьютерном зрении, обработке
+        языка и аудио MLP обычно выигрывает по точности и существенно — по
+        скорости; KAN лучше в символьном представлении формул и непрерывном
+        обучении. Это важный противовес хайпу.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Что нельзя утверждать</p>
+        <p>
+          «KAN лучше MLP» и «KAN хуже MLP» — одинаково неверные обобщения.
+          Корректная формулировка звучит так: на таких-то данных, при таком-то
+          бюджете и такой-то настройке KAN дал такую-то ошибку за такое-то время.
+          Всё остальное — маркетинг.
+        </p>
+      </div>
+
+      <h3 id="s5-4-1">Когда что выбирать</h3>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Ситуация</th><th>Разумный выбор</th><th>Почему</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Нужна формула по данным, размерность небольшая</td>
+              <td>KAN</td>
+              <td>Рёбра интерпретируемы, есть шанс на символическое восстановление</td>
+            </tr>
+            <tr>
+              <td>Гладкая регрессия, мало параметров, важна точность</td>
+              <td>KAN</td>
+              <td>Сплайны эффективно приближают гладкие функции</td>
+            </tr>
+            <tr>
+              <td>Изображения, текст, аудио, большие данные</td>
+              <td>MLP / CNN / Transformer</td>
+              <td>Быстрые матричные операции, проверенные архитектуры</td>
+            </tr>
+            <tr>
+              <td>Жёсткие ограничения по задержке</td>
+              <td>MLP</td>
+              <td>KAN дороже на параметр из-за вычисления базиса</td>
+            </tr>
+            <tr>
+              <td>Нужна интерпретация после обучения</td>
+              <td>KAN + разреживание</td>
+              <td>Функции на рёбрах можно нарисовать и сопоставить формулам</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <h2 id="s5-5" data-num="5.5">Интерпретируемость на практике</h2>
+
+      <p>
+        Начнём с разреживания. Добавим к MSE штраф на абсолютные величины
+        коэффициентов сплайнов:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">sparsity.py — L1-регуляризация</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">mse = F.mse_loss(model(x), y)
+
+# штрафуем только коэффициенты сплайнов (тензоры размерности 3)
+l1 = sum(p.abs().mean() for p in model.parameters() if p.ndim == 3)
+loss = mse + 1e-2 * l1</code></pre>
+      </div>
+
+      <p>
+        После обучения оценим важность рёбер. Простая мера — средний модуль
+        коэффициентов ребра:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">prune.py — важность и удаление рёбер</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">with torch.no_grad():
+    layer = model.layers[0]
+    importance = layer.coef.abs().mean(dim=2)      # (n_out, n_in)
+
+    threshold = torch.quantile(importance, 0.5)    # оставить половину
+    mask = (importance >= threshold).float()
+
+    # обнуляем коэффициенты и базовые веса отрезанных рёбер
+    layer.coef.mul_(mask[..., None])
+    layer.base_weight.mul_(mask)</code></pre>
+      </div>
+
+      <p>
+        Затем каждое оставшееся ребро можно попробовать заменить простой
+        формулой. В <code>kan_torch.py</code> есть функция
+        <code>symbolic_fit_1d</code>: она перебирает кандидатов
+        (<span class="math">x, x<sup>2</sup>, x<sup>3</sup>, sin, cos, tanh, exp, |x|</span>),
+        масштабы <span class="math">b</span> и подбирает линейные
+        <span class="math">a, d</span> методом наименьших квадратов.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">symbolic.py — суть подгонки</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">for name, fn in candidates.items():
+    for b in torch.linspace(0.5, 4.0, 36):
+        z = fn(b * x)                       # кандидат
+        A = torch.stack([z, torch.ones_like(z)], dim=1)
+        sol = torch.linalg.lstsq(A, y.unsqueeze(1)).solution
+        error = torch.mean((A @ sol - y.unsqueeze(1)) ** 2)
+        # запоминаем лучшую пару (name, b, a, d)</code></pre>
+      </div>
+
+      <p>
+        На задаче <span class="math">sin(πx)</span> этот перебор должен вернуть
+        что-то вроде <span class="math">1.0 · sin(3.14 x) + 0.0</span>.
+        Совпадение масштаба <span class="math">b</span> с
+        <span class="math">π</span> — хороший признак того, что сеть выучила
+        именно синус, а не просто похожую кривую.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Пример из статьи</p>
+        <p>
+          Для функции <span class="math">exp(sin(πx) + y<sup>2</sup>)</span>
+          KAN восстановил внутренние рёбра <span class="math">sin</span> и
+          <span class="math">y<sup>2</sup></span>, а внешнее — экспоненту.
+          Именно такие примеры показывают, зачем нужна интерпретируемость:
+          модель не просто предсказывает, а предлагает структуру зависимости.
+        </p>
+      </div>
+      <h2 id="s5-6" data-num="5.6">Уточнение сетки и двумерный пример</h2>
+
+      <p>
+        Вернёмся к grid extension. В коде это отдельный метод модели. Он
+        запоминает старую функцию, строит новый базис и решает МНК для каждого
+        ребра:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">extend.py — уточнение без переобучения</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">@torch.no_grad()
+def extend_grid(self, new_grid_size):
+    for layer in self.layers:
+        old = layer.basis
+        xs = torch.linspace(old.lo, old.hi, 256)
+
+        old_basis = old(xs)                              # (S, n_in, nb_old)
+        values = torch.einsum("sik,oik->soi", old_basis, layer.coef)
+
+        new_basis = BSplineBasis(new_grid_size, old.degree)
+        new_B = new_basis(xs)                            # (S, n_in, nb_new)
+
+        A = new_B.permute(1, 0, 2)                       # (n_in, S, nb_new)
+        Y = values.permute(2, 0, 1)                       # (n_in, S, n_out)
+        solution = torch.linalg.lstsq(A, Y).solution
+
+        layer.coef = nn.Parameter(solution.permute(2, 0, 1))
+        layer.basis = new_basis</code></pre>
+      </div>
+
+      <p>
+        Важно: после замены коэффициентов нужно создать новый оптимизатор —
+        старый хранит ссылки на прежние параметры. В нашем скрипте
+        <code>train()</code> создаёт Adam заново, поэтому последовательность
+        «обучить → расширить → обучить» работает корректно.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Модель</th><th>G = 3</th><th>G = 10</th><th>Рост параметров</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>KAN 1 → 1</td><td>8</td><td>15</td><td>1.9×</td></tr>
+            <tr><td>KAN 2 → 3 → 1</td><td>67</td><td>130</td><td>1.9×</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Двумерная задача в скрипте — <span class="math">exp(sin(πx) + y²)</span>.
+        Запуск:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/kan_torch.py --task 2d --steps 2500
+$ python3 code/kan_torch.py --task 2d --steps 2500 --extend
+$ python3 code/kan_torch.py --task 1d --steps 3000 --l1 0.01</code></pre>
+      </div>
+
+      <p>
+        По умолчанию для 2D используется архитектура
+        <span class="math">2 → 3 → 1</span> — 85 параметров при
+        <span class="math">G = 5</span>. Сеть маленькая, поэтому обучение на CPU
+        занимает считанные секунды. Если ошибка не падает, сначала проверьте
+        масштаб целевой переменной: значения
+        <span class="math">exp(…)</span> лежат в диапазоне примерно от 0.37 до
+        7.4, и MSE будет сильно взвешивать большие значения.
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Стандартизация цели</p>
+        <p>
+          Для регрессии полезно вычесть среднее и поделить на стандартное
+          отклонение <span class="math">y</span>, а на выходе вернуть масштаб
+          обратно. Это не меняет задачу, но делает скорость обучения и пороги
+          ошибки сопоставимыми между задачами. Для KAN это особенно удобно:
+          сплайны работают с входами в <span class="math">[−1, 1]</span>, и
+          выходной масштаб тоже лучше держать разумным.
+        </p>
+      </div>
+
+      <h2 id="s5-7" data-num="5.7">Грабли и как их обойти</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Симптом</th><th>Вероятная причина</th><th>Что делать</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Потери не падают</td>
+              <td>Слишком большой/маленький learning rate; входы вне [−1, 1]</td>
+              <td>Проверить масштаб данных, подобрать lr, уменьшить G</td>
+            </tr>
+            <tr>
+              <td>MSE падает, но функция «дрожит»</td>
+              <td>Слишком тонкая сетка при малом объёме данных</td>
+              <td>Уменьшить G, добавить L1/L2, больше данных</td>
+            </tr>
+            <tr>
+              <td>Все рёбра почти одинаковые</td>
+              <td>Симметричная инициализация</td>
+              <td>Случайные коэффициенты, разные seed</td>
+            </tr>
+            <tr>
+              <td>После grid extension ошибка выросла</td>
+              <td>Проекция неточная или lr слишком большой</td>
+              <td>Проверить МНК, уменьшить lr после расширения</td>
+            </tr>
+            <tr>
+              <td>Медленно на CPU</td>
+              <td>Большой батч × n_in × (G+k)</td>
+              <td>Уменьшить батч или G, использовать float32</td>
+            </tr>
+            <tr>
+              <td>Плохое обобщение</td>
+              <td>Переобучение</td>
+              <td>Валидация, ранняя остановка, регуляризация</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Экстраполяция</p>
+        <p>
+          Сплайн определён на <span class="math">[−1, 1]</span>. За пределами
+          этого отрезка базисные функции равны нулю, и остаётся только
+          <span class="math">w<sub>b</sub>SiLU(x)</span> — то есть линейный
+          хвост. Не ждите от KAN разумного поведения вне обучающего диапазона;
+          это принципиальное ограничение выбранного базиса, а не ошибка обучения.
+        </p>
+      </div>
+
+      <h2 id="s5-8" data-num="5.8">Упражнения и мини-проект</h2>
+
+      <ol>
+        <li>
+          Запустите <code>kan_demo_pure.py</code>. Замените цель на
+          <span class="math">sin(2πx)</span>, не меняя <span class="math">G</span>.
+          Что произойдёт с ошибкой? Почему? Попробуйте увеличить
+          <span class="math">G</span> и объясните результат.
+        </li>
+        <li>
+          Посчитайте число параметров KAN <span class="math">2 → 5 → 1</span> при
+          <span class="math">G = 7</span>, <span class="math">k = 3</span> и
+          сравните с MLP той же формы.
+        </li>
+        <li>
+          Обучите 1D-модель с <code>--l1 0.01</code> и без него. Как меняются
+          коэффициенты? Стала ли функция проще?
+        </li>
+        <li>
+          Запустите обучение с <code>--extend</code>. Сравните MSE до и после
+          уточнения сетки. Сохранилась ли форма функции сразу после расширения?
+        </li>
+        <li>
+          Проверьте символическую подгонку для <span class="math">f(x) = x³</span>.
+          Находит ли перебор функцию <span class="math">x³</span>? А для
+          <span class="math">f(x) = |x|</span>?
+        </li>
+        <li>
+          Сформулируйте протокол честного сравнения KAN и MLP на вашей задаче.
+          Какие величины вы зафиксируете и какие будете измерять?
+        </li>
+        <li>
+          Объясните, почему KAN медленнее MLP при том же числе параметров, и
+          почему он всё равно может быть выгоден.
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            Ошибка вырастет: восьми базисных функций на два периода синуса не
+            хватает. Увеличение <span class="math">G</span> добавляет локальные
+            степени свободы, и ошибка падает. Это прямая иллюстрация компромисса
+            «разрешение сетки против числа параметров». На проверке при
+            <span class="math">G = 5</span> получается MSE ≈
+            <span class="math">1.7·10<sup>−3</sup></span>, а при
+            <span class="math">G = 11</span> — уже
+            <span class="math">1.8·10<sup>−5</sup></span>.
+          </li>
+          <li>
+            KAN: <span class="math">2·5·(7+3+1) + 5 = 115</span> и
+            <span class="math">5·1·11 + 1 = 56</span>, итого 171. MLP:
+            <span class="math">(2·5 + 5) + (5·1 + 1) = 21</span>. Отношение ≈ 8.1×.
+          </li>
+          <li>
+            С L1 коэффициенты стремятся к нулю, часть рёбер «схлопывается».
+            Функция становится проще, но MSE может немного вырасти. Это ожидаемый
+            обмен точности на интерпретируемость.
+          </li>
+          <li>
+            После расширения функция должна почти не измениться — МНК подбирает
+            коэффициенты так, чтобы сохранить значения на старой сетке. Небольшое
+            изменение возможно из-за численных погрешностей и разного базиса.
+          </li>
+          <li>
+            Для <span class="math">x³</span> кандидат есть в библиотеке, поэтому
+            подгонка должна дать хороший результат. Для <span class="math">|x|</span>
+            тоже есть кандидат, но гладкий сплайн приблизит излом лишь
+            приближённо — ошибка будет заметнее.
+          </li>
+          <li>
+            Зафиксировать: splits, seed (лучше несколько), число шагов или время,
+            бюджет параметров. Измерять: MSE на val/test, время обучения, время
+            инференса, разброс по seed. Дополнительно — визуальную форму функции.
+          </li>
+          <li>
+            Каждое ребро KAN требует вычисления <span class="math">G+k</span>
+            базисных функций и умножения на коэффициенты, тогда как MLP — одного
+            умножения. Зато KAN может достичь той же точности меньшим числом
+            параметров и даёт интерпретируемые рёбра.
+          </li>
+        </ol>
+      </details>
+
+      <div class="callout practice">
+        <p class="callout-title">Мини-проект</p>
+        <p>
+          Возьмите <span class="math">f(x, y) = sin(πx)·cos(πy)</span>. Сравните
+          KAN <span class="math">2 → 2 → 1</span> (<span class="math">G=5</span>)
+          и MLP <span class="math">2 → 6 → 6 → 1</span>: у них сопоставимый
+          бюджет параметров. Обучите каждую модель с тремя seed, измерьте MSE на
+          отложенной выборке и время обучения. Оформите таблицу и сделайте вывод:
+          в каких условиях выигрывает каждая архитектура.
+        </p>
+      </div>
+      <h2 id="s5-9" data-num="5.9">Итоги части I</h2>
+
+      <p>
+        Мы прошли путь от «что такое обучение» до работающей KAN. Пять глав
+        складываются в целостную картину:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Глава 1</strong> дала язык: данные, модель, потери, оптимизация
+          и место KAN среди нейросетей.
+        </li>
+        <li>
+          <strong>Глава 2</strong> — математический аппарат: матрицы, градиенты,
+          вероятность, градиентный спуск и численная устойчивость.
+        </li>
+        <li>
+          <strong>Глава 3</strong> — MLP, backprop, обобщение и универсальная
+          аппроксимация: база, с которой сравнивается любая новая архитектура.
+        </li>
+        <li>
+          <strong>Глава 4</strong> — теорема Колмогорова–Арнольда, B-сплайны и
+          точная формула слоя KAN.
+        </li>
+        <li>
+          <strong>Глава 5</strong> — код, эксперименты, сравнение и интерпретация.
+        </li>
+      </ul>
+
+      <p>
+        Главный вывод: KAN — это не «нейросеть будущего, которая всё заменит», а
+        интересный класс моделей с другим индуктивным смещением. Он естественно
+        работает там, где функция гладкая, размерность невелика, а результат
+        нужно понять. Он проигрывает MLP в скорости и на больших неструктурированных
+        данных. Понимание этого баланса важнее, чем любая модная архитектура.
+      </p>
+
+      <h3 id="s5-9-1">Что читать дальше</h3>
+
+      <ul>
+        <li>
+          Liu Z. et al. <em>KAN: Kolmogorov–Arnold Networks</em> —
+          <a href="https://arxiv.org/abs/2404.19756">arXiv:2404.19756</a>
+          (оригинальная статья).
+        </li>
+        <li>
+          Liu Z. et al. <em>KAN 2.0: Kolmogorov–Arnold Networks Meet Science</em> —
+          <a href="https://arxiv.org/abs/2408.10205">arXiv:2408.10205</a>.
+        </li>
+        <li>
+          Yu R. et al. <em>KAN or MLP: A Fairer Comparison</em> —
+          <a href="https://arxiv.org/abs/2407.16674">arXiv:2407.16674</a>
+          (критический взгляд).
+        </li>
+        <li>
+          Колмогоров А. Н. <em>О представлении непрерывных функций нескольких
+          переменных суперпозициями непрерывных функций меньшего числа
+          переменных</em> (1957); работы В. И. Арнольда о суперпозициях.
+        </li>
+        <li>
+          Цыбенко Г. (1989), Хорник К. (1991) — теоремы об универсальной
+          аппроксимации.
+        </li>
+        <li>
+          Румельхарт Д., Хинтон Дж., Уильямс Р. (1986) — обратное распространение.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Продолжение: от модели к продукту</p>
+        <p>
+          Фундамент собран. В главах 6–9 мы возьмём реальный датасет Iris,
+          обучим KAN <span class="math">4 → 3</span>, оценим её на
+          кросс-валидации, сохраним веса, разберём претрейн и LLM, поднимем
+          HTTP-сервис и сделаем живую модель, которой можно пользоваться.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-4.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">4. Теорема и архитектура KAN</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-6.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">6. Данные и честная оценка</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть I «Основы» · глава 5 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="chapter-6.html">Глава 6 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+

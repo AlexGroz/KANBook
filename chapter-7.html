@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 7. Реальная KAN на Iris — KANBook</title>
+<meta name="description" content="KAN 4 → 3 на Iris: архитектура, softmax и кросс-энтропия, обучение, кросс-валидация 95.3%, сохранение весов в JSON и живое браузерное демо.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 7 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-6.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="chapter-8.html" title="Следующая глава (→)" aria-label="Следующая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">7. Реальная KAN на Iris</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html"><strong>7</strong></a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html">9</a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть II · От модели к продукту</p>
+      <h1>Реальная KAN на Iris: обучение и сохранение</h1>
+      <p class="lead">
+        Соберём KAN, которая действительно классифицирует цветы: четыре входа,
+        три класса, 111 параметров. Обучим её на 120 примерах, проверим на 30,
+        сохраним веса в JSON и подключим к странице, где любой человек сможет
+        ввести измерения и получить ответ.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 7</strong> из 9</span>
+        <span class="meta-chip">≈ 65 минут</span>
+        <span class="meta-chip">KAN · обучение · экспорт</span>
+        <span class="meta-chip">сложность: средняя</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Всё следует упрощать до тех пор, пока это возможно, но не более того.
+        <cite>Альберт Эйнштейн</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Перед главой</p>
+        <p>
+          Нужны глава 6 (данные и метрики) и раздел 4.4 (слой KAN). Код можно
+          просто запустить: он сам обучит модель и сохранит веса. Если хотите
+          понять каждую строку — возвращайтесь к главам 2–5 по мере вопросов.
+        </p>
+      </div>
+      <h2 id="s7-1" data-num="7.1">Архитектура: четыре входа, три класса</h2>
+
+      <p>
+        Для Iris мы используем один слой KAN
+        <span class="math">4 → 3</span>. Каждый из трёх выходов (логитов)
+        складывает четыре функции, по одной на признак:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          z<sub>k</sub>(x) =
+          <span class="big-op">Σ<sub>i=1</sub><sup>4</sup></span>
+          φ<sub>k,i</sub>(x<sub>i</sub>) + b<sub>k</sub>,
+          &nbsp;&nbsp; k = 1, 2, 3
+        </div>
+        <div class="formula-caption"><strong>Один слой KAN.</strong> φ<sub>k,i</sub> — обучаемая функция ребра «признак i → класс k».</div>
+      </div>
+
+      <p>
+        Каждая <span class="math">φ<sub>k,i</sub></span> — это B-сплайн степени
+        <span class="math">k = 3</span> на сетке <span class="math">G = 5</span>
+        плюс базовая SiLU. На ребро приходится
+        <span class="math">G + k = 8</span> коэффициентов сплайна, один базовый
+        вес и одно смещение на выход. Итого:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          P = 3 · 4 · (8 + 1) + 3 = 111
+        </div>
+        <div class="formula-caption"><strong>Число параметров.</strong> Три класса, четыре признака, девять параметров на ребро плюс смещения.</div>
+      </div>
+
+      <p>
+        Почему один слой, а не глубокая сеть? Для четырёх признаков и трёх
+        классов этого достаточно: модель получается компактной, быстрой и
+        интерпретируемой. Если бы понадобились взаимодействия «признак ×
+        признак», мы бы добавили скрытый слой или признаки-произведения. Но
+        начинать всегда стоит с простого.
+      </p>
+
+      <div class="figure">
+        <div class="figure-frame">
+          <svg viewBox="0 0 640 300" role="img" aria-label="KAN 4 → 3: четыре входа, двенадцать обучаемых функций, три выхода">
+            <text x="18" y="26" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="var(--muted)" letter-spacing="1.2">ПРИЗНАКИ</text>
+            <text x="548" y="26" font-family="system-ui, sans-serif" font-size="11" font-weight="700" fill="var(--muted)" letter-spacing="1.2">ЛОГИТЫ</text>
+
+            <g fill="var(--surface-2)" stroke="var(--accent-2)" stroke-width="1.2">
+              <circle cx="64" cy="70" r="15"/><circle cx="64" cy="130" r="15"/>
+              <circle cx="64" cy="190" r="15"/><circle cx="64" cy="250" r="15"/>
+              <circle cx="560" cy="105" r="17"/><circle cx="560" cy="175" r="17"/><circle cx="560" cy="245" r="17"/>
+            </g>
+
+            <g font-family="Georgia, serif" font-size="12" font-style="italic" text-anchor="middle" fill="var(--ink)">
+              <text x="64" y="74">x₁</text><text x="64" y="134">x₂</text>
+              <text x="64" y="194">x₃</text><text x="64" y="254">x₄</text>
+              <text x="560" y="110">z₁</text><text x="560" y="180">z₂</text><text x="560" y="250">z₃</text>
+            </g>
+
+            <g fill="none" stroke="var(--accent)" stroke-width="1.2" opacity="0.55">
+              <path d="M80 70 Q 320 60, 542 100"/><path d="M80 70 Q 320 130, 542 170"/><path d="M80 70 Q 320 200, 542 240"/>
+              <path d="M80 130 Q 320 90, 542 100"/><path d="M80 130 Q 320 150, 542 170"/><path d="M80 130 Q 320 220, 542 240"/>
+              <path d="M80 190 Q 320 120, 542 100"/><path d="M80 190 Q 320 180, 542 170"/><path d="M80 190 Q 320 250, 542 240"/>
+              <path d="M80 250 Q 320 150, 542 100"/><path d="M80 250 Q 320 210, 542 170"/><path d="M80 250 Q 320 270, 542 240"/>
+            </g>
+
+            <g fill="none" stroke="var(--accent-2)" stroke-width="1.6" stroke-linecap="round">
+              <path d="M300 46 q 9 -12 18 0 t 18 0"/>
+              <path d="M300 136 q 9 -12 18 0 t 18 0"/>
+              <path d="M300 226 q 9 -12 18 0 t 18 0"/>
+            </g>
+
+            <text x="320" y="286" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="var(--muted)">каждое ребро — своя φ с 9 параметрами; выход складывает 4 вклада</text>
+          </svg>
+        </div>
+        <figcaption><strong>Рис. 7.1.</strong> Двенадцать функций, три суммы, 111 параметров. Модель маленькая, но настоящая.</figcaption>
+      </div>
+      <h2 id="s7-2" data-num="7.2">От логитов к вероятностям</h2>
+
+      <p>
+        Логиты <span class="math">z<sub>k</sub></span> — произвольные числа.
+        Чтобы получить вероятности, применяем softmax, а качество измеряем
+        кросс-энтропией:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          p<sub>k</sub> =
+          <span class="frac"><span class="num">exp(z<sub>k</sub>)</span><span class="den">Σ<sub>j</sub> exp(z<sub>j</sub>)</span></span>,
+          &nbsp;&nbsp;
+          L = − log p<sub>y</sub>
+        </div>
+        <div class="formula-caption"><strong>Softmax и кросс-энтропия.</strong> y — индекс правильного класса.</div>
+      </div>
+
+      <p>
+        Градиент по логитам удивительно простой: это разность предсказанной
+        вероятности и «единички» правильного класса.
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          δ<sub>k</sub> = p<sub>k</sub> − 1[k = y]
+        </div>
+        <div class="formula-caption"><strong>Сигнал ошибки.</strong> Для правильного класса отрицательный, для остальных — положительный.</div>
+      </div>
+
+      <p>
+        Дальше градиенты каждого параметра получаются умножением
+        <span class="math">δ<sub>k</sub></span> на вход соответствующего ребра.
+        Для коэффициента сплайна, базового веса и смещения:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="frac"><span class="num">∂L</span><span class="den">∂c<sub>k,i,b</sub></span></span>
+          = δ<sub>k</sub> B<sub>b</sub>(x<sub>i</sub>),
+          &nbsp;&nbsp;
+          <span class="frac"><span class="num">∂L</span><span class="den">∂w<sub>k,i</sub></span></span>
+          = δ<sub>k</sub> SiLU(x<sub>i</sub>),
+          &nbsp;&nbsp;
+          <span class="frac"><span class="num">∂L</span><span class="den">∂b<sub>k</sub></span></span>
+          = δ<sub>k</sub>
+        </div>
+        <div class="formula-caption"><strong>Градиенты одного слоя.</strong> Всё усредняется по батчу.</div>
+      </div>
+
+      <p>
+        Обратите внимание: при фиксированных данных и базисе логиты линейны по
+        коэффициентам. Значит, один слой KAN с softmax — почти линейная
+        классификация в признаковом пространстве B-сплайнов. Это делает обучение
+        устойчивым и быстрым, но ограничивает взаимодействия между признаками.
+        Для Iris этого хватает; для более сложных данных нужен второй слой.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">forward_backward.py — ядро обучения</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">for basis, base_vals, y in zip(S, Bv, Y):
+    p = softmax(logits(basis, base_vals))
+
+    for k in range(3):
+        d = (p[k] - (1.0 if k == y else 0.0)) / N
+
+        grad_bias[k] += d
+        for i in range(4):
+            grad_base[k][i] += d * base_vals[i]
+            for b in range(8):
+                grad_coef[k][i][b] += d * basis[i][b]</code></pre>
+      </div>
+      <h2 id="s7-3" data-num="7.3">Обучение и результаты</h2>
+
+      <p>
+        Данные делим стратифицированно: 120 примеров в обучение, 30 — в
+        отложенную выборку. Min/max считаем только по 120. Входы переводим в
+        <span class="math">[−1, 1]</span>, метки — в индексы
+        <span class="math">0, 1, 2</span>. Оптимизатор — Adam с
+        <span class="math">η = 0.02</span>, полный батч, 3000 шагов,
+        кросс-энтропия.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">train_iris.py — цикл обучения</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">mins, maxs = fit_normalizer(train_rows)       # только train!
+S, Bv, Y = prepare(train_rows, mins, maxs, knots, classes)
+
+model = KanClassifier(n_in=4, n_out=3, nbasis=G + K)
+model.train(S, Bv, Y, epochs=3000, lr=0.02)
+
+print(model.evaluate(St, Bt, Yt))</code></pre>
+      </div>
+
+      <p>
+        Сначала посмотрим на кросс-валидацию — она честнее одного разбиения.
+        Пять фолдов по 30 примеров дают:
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Фолд</th><th>Accuracy на отложенной части</th><th>Размер</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td>0.9667</td><td>30</td></tr>
+            <tr><td>2</td><td>0.9667</td><td>30</td></tr>
+            <tr><td>3</td><td>0.9000</td><td>30</td></tr>
+            <tr><td>4</td><td>0.9667</td><td>30</td></tr>
+            <tr><td>5</td><td>0.9667</td><td>30</td></tr>
+            <tr><th>Среднее</th><th>0.9533 ± 0.0267</th><th>150</th></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Теперь финальная модель на split 80/20. На обучении — 100%, на
+        отложенных 30 примерах — тоже 30/30. Матрица ошибок диагональная:
+      </p>
+
+      <div class="formula">
+        <div class="formula-body">
+          <span class="math">
+            [[10, 0, 0],<br>
+            &nbsp;[0, 10, 0],<br>
+            &nbsp;[0, 0, 10]]
+          </span>
+        </div>
+        <div class="formula-caption"><strong>Confusion matrix на тесте.</strong> По 10 примеров каждого класса, все верно.</div>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Не путайте 30/30 с «100% точностью»</p>
+        <p>
+          Тридцать примеров — это маленькая выборка. Одна ошибка сдвинула бы
+          оценку на 3.3 п.п., а другой split мог бы дать 28/30. Кросс-валидация
+          (95.3% ± 2.7%) — более честная оценка обобщения. В отчётах и в демо
+          мы приводим обе цифры, а не только красивую.
+        </p>
+      </div>
+
+      <p>
+        Модель уверенно разделяет setosa (он отделяется почти по ширине
+        лепестка), а основные трудности — между versicolor и virginica. Это
+        видно и в данных: их диапазоны перекрываются. Именно там кросс-валидация
+        теряет свои 3–7%.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Что было бы с MLP</p>
+        <p>
+          Маленький MLP <span class="math">4 → 8 → 3</span> на Iris тоже даёт
+          около 95–97% при аккуратной настройке. KAN здесь не «лучше вообще» —
+          она компактнее и интерпретируемее: у каждого ребра можно нарисовать
+          функцию и увидеть, как признак влияет на класс. Для учебного примера
+          это важнее десятых долей процента.
+        </p>
+      </div>
+
+      <h2 id="s7-4" data-num="7.4">Сохранение модели</h2>
+
+      <p>
+        Обученная модель — это не только код, но и числа. Мы сохраняем их в
+        обычный JSON: его можно прочитать, проверить, передать и загрузить
+        обратно без PyTorch.
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Поле</th><th>Зачем</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>features</code>, <code>classes</code></td><td>Порядок входов и выходов</td></tr>
+            <tr><td><code>min</code>, <code>max</code></td><td>Нормализация, зафиксированная на train</td></tr>
+            <tr><td><code>knots</code>, <code>degree</code>, <code>grid</code></td><td>Базис B-сплайнов</td></tr>
+            <tr><td><code>coef</code></td><td>Коэффициенты сплайнов, 3 × 4 × 8</td></tr>
+            <tr><td><code>base</code>, <code>bias</code></td><td>Веса SiLU и смещения</td></tr>
+            <tr><td><code>metrics</code>, <code>notes</code></td><td>Модельная карточка и ограничения</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">export.py — веса в JSON</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">payload = {
+    "features": FEATURES,
+    "classes": classes,
+    "min": mins,
+    "max": maxs,
+    "knots": knots,
+    "degree": K,
+    "coef": model.coef,
+    "base": model.base,
+    "bias": model.bias,
+    "metrics": {"test_accuracy": test_acc, ...},
+}
+
+with open("code/iris_model.json", "w", encoding="utf-8") as f:
+    json.dump(payload, f, ensure_ascii=False, indent=2)</code></pre>
+      </div>
+
+      <p>
+        Почему JSON, а не <code>pickle</code>? JSON безопаснее (не исполняет
+        код при загрузке), переносим между языками и удобен для чтения. Для
+        больших моделей так хранить всё нерационально, но для компактной KAN
+        это идеальный формат: наши веса занимают около 4 КБ.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Версионируйте модель</p>
+        <p>
+          В JSON есть поля <code>version</code> и <code>notes</code>. Если вы
+          меняете данные, нормализацию или архитектуру, сохраняйте новую версию.
+          Иначе старый фронтенд может незаметно начать подавать признаки в другом
+          порядке — и предсказания станут мусором.
+        </p>
+      </div>
+      <h2 id="s7-5" data-num="7.5">Живое демо: модель в браузере</h2>
+
+      <p>
+        Сохранённых весов достаточно, чтобы предсказывать без Python. Страница
+        <a href="demo.html">demo.html</a> загружает
+        <code>assets/iris_model.js</code> — те же коэффициенты, что в JSON, — и
+        считает B-сплайны, SiLU и softmax на JavaScript. Никакого сервера и
+        интернета не нужно.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">inference.js — как считается ответ</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">function predict(values) {
+    const xn = values.map(normalize);
+    const basis = xn.map(x => basisRow(knots, degree, x));
+
+    const logits = classes.map((_, k) => {
+        let z = bias[k];
+        for (let i = 0; i < features.length; i++) {
+            z += base[k][i] * silu(xn[i]);
+            for (let b = 0; b < coef[k][i].length; b++)
+                z += coef[k][i][b] * basis[i][b];
+        }
+        return z;
+    });
+
+    return softmax(logits);
+}</code></pre>
+      </div>
+
+      <p>
+        Именно этот код выполняется, когда вы двигаете ползунки на странице
+        демо. Модель не «зашита» в if-else: это настоящая арифметика KAN с
+        весами, полученными обучением.
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Попробуйте сами</p>
+        <p>
+          Откройте <a href="demo.html">живое демо</a> и выберите versicolor.
+          Затем увеличьте ширину лепестка к 2.5 см и посмотрите, как меняются
+          вероятности. Это нагляднее любой таблицы: вы видите, где модель
+          уверена, а где начинает сомневаться.
+        </p>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Свойство модели</th><th>Значение</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Архитектура</td><td>KAN 4 → 3, один слой</td></tr>
+            <tr><td>Параметры</td><td>111</td></tr>
+            <tr><td>Обучение</td><td>120 примеров, 3000 шагов Adam</td></tr>
+            <tr><td>Кросс-валидация</td><td>95.3% ± 2.7%</td></tr>
+            <tr><td>Отложенный тест</td><td>30/30 на данном split</td></tr>
+            <tr><td>Размер весов</td><td>≈ 4.3 КБ</td></tr>
+            <tr><td>Инференс</td><td>&lt; 1 мс на пример в браузере</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="s7-6" data-num="7.6">Воспроизведение и ограничения</h2>
+
+      <p>
+        Всё можно повторить двумя командами. Первая запускает кросс-валидацию,
+        вторая — финальное обучение и экспорт.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал — проверено</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/iris_kan_pure.py --cv --cv-epochs 1200
+
+  фолд 1: accuracy = 0.9667 (n=30)
+  фолд 2: accuracy = 0.9667 (n=30)
+  фолд 3: accuracy = 0.9000 (n=30)
+  фолд 4: accuracy = 0.9667 (n=30)
+  фолд 5: accuracy = 0.9667 (n=30)
+  CV accuracy: 0.9533 ± 0.0267
+
+$ python3 code/iris_kan_pure.py --export --epochs 3000
+
+  train accuracy: 1.0000
+  test  accuracy: 1.0000
+  confusion (test): [[10, 0, 0], [0, 10, 0], [0, 0, 10]]</code></pre>
+      </div>
+
+      <p>
+        Время: около 12 секунд на CV и 6 секунд на финальное обучение на
+        обычном CPU. Это важно: полный цикл «данные → модель → веса» укладывается
+        в полминуты, поэтому экспериментировать можно быстро.
+      </p>
+
+      <h3 id="s7-6-1">Что можно менять</h3>
+
+      <ul>
+        <li>
+          <strong>Число эпох.</strong> Меньше — быстрее, но модель может не
+          сойтись; больше — риск переобучения на 120 примерах.
+        </li>
+        <li>
+          <strong>Сетку G.</strong> Больше G — больше гибкости и параметров;
+          на маленьком наборе это легко переобучает.
+        </li>
+        <li>
+          <strong>Seed.</strong> Другой split и инициализация дают другой
+          результат; поэтому и нужна CV.
+        </li>
+        <li>
+          <strong>Признаки.</strong> Добавьте произведения или отношения
+          размеров — и один слой KAN сможет учитывать взаимодействия.
+        </li>
+      </ul>
+
+      <div class="callout warning">
+        <p class="callout-title">Границы применимости</p>
+        <p>
+          Модель обучена на 150 измерениях трёх видов ириса. Она не «понимает»
+          ботанику, не работает с другими растениями и не является медицинской
+          рекомендацией. Для реального применения нужны репрезентативные данные,
+          внешний тест, мониторинг и понимание цены ошибки.
+        </p>
+      </div>
+      <h3 id="s7-6-2">Упражнения</h3>
+
+      <ol>
+        <li>
+          Посчитайте число параметров KAN <span class="math">4 → 3</span> при
+          <span class="math">G = 3</span>, <span class="math">k = 3</span>.
+        </li>
+        <li>
+          Почему в JSON нужно хранить <code>min</code> и <code>max</code>, а не
+          только коэффициенты?
+        </li>
+        <li>
+          Что произойдёт, если подать в демо ширину лепестка 5 см? Почему?
+        </li>
+        <li>
+          Обучите модель с другим seed. Изменилась ли accuracy на тесте? Что это
+          говорит о доверии к одной цифре?
+        </li>
+        <li>
+          Предложите, как добавить в модель взаимодействие «длина × ширина
+          лепестка», не переходя к глубокой сети.
+        </li>
+        <li>
+          Почему 30/30 на тесте и 95.3% в CV — не противоречие?
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            <span class="math">3 · 4 · (3 + 3 + 1) + 3 = 84 + 3 = 87</span>.
+            Меньше G — меньше параметров, но и меньше гибкости.
+          </li>
+          <li>
+            Без min/max невозможно правильно нормализовать новый вход. Одни
+            коэффициенты описывают функцию на уже преобразованном
+            <span class="math">[−1, 1]</span>; масштаб — часть модели.
+          </li>
+          <li>
+            Значение выйдет за обучающий диапазон; в демо ползунок ограничен, а
+            сервис вернёт ошибку. Если насильно подать 5 см, KAN будет
+            экстраполировать, и ответ станет ненадёжным.
+          </li>
+          <li>
+            Скорее всего, accuracy изменится на 1–3 п.п. Именно поэтому одна
+            цифра на одном split — не результат; нужны CV, несколько seed и
+            отчёт о разбросе.
+          </li>
+          <li>
+            Добавить признак <span class="math">x<sub>3</sub> · x<sub>4</sub></span>
+            (или отношение) как пятый вход. KAN останется однослойной, но
+            получит взаимодействие. Альтернатива — скрытый слой.
+          </li>
+          <li>
+            На одном split из 30 примеров модель могла не ошибиться; CV
+            проверяет пять разных разбиений и показывает среднее. Маленький тест
+            просто менее информативен.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s7-7" data-num="7.7">Итоги главы</h2>
+
+      <ul>
+        <li>
+          KAN <span class="math">4 → 3</span> с 111 параметрами — полноценная
+          обучаемая модель, а не иллюстрация.
+        </li>
+        <li>
+          Один слой с softmax и кросс-энтропией обучается аналитическими
+          градиентами и даёт 95.3% ± 2.7% в CV на Iris.
+        </li>
+        <li>
+          Веса можно сохранить в JSON и выполнять инференс на JavaScript — без
+          Python и сервера.
+        </li>
+        <li>
+          Честная модель — это метрики, ограничения и модель-карточка, а не
+          только accuracy.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что дальше</p>
+        <p>
+          Мы обучили модель с нуля. В главе 8 разберём, что такое претрейн и
+          дообучение, чем они отличаются от обучения с нуля и почему «претрейн
+          KAN как LLM» — пока исследовательская, а не готовая инженерная история.
+        </p>
+      </div>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-6.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">6. Данные и честная оценка</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="chapter-8.html">
+        <span class="dir">Следующая →</span>
+        <span class="name">8. Претрейн, дообучение и LLM: как обучать KAN</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть II · глава 7 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="demo.html">Живая KAN</a>
+    <span class="sep">·</span>
+    <a href="chapter-8.html">Глава 8 →</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+
+
+

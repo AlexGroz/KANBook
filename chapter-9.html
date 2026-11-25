@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Глава 9. Развёртывание и капстоун — KANBook</title>
+<meta name="description" content="Как сделать KAN доступной людям: статическое демо, HTTP API без зависимостей, Docker, тесты, мониторинг и капстоун-проект.">
+<meta name="theme-color" content="#f7f5ef">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%23191a1c'/%3E%3Ctext%20x='16'%20y='21'%20font-family='monospace'%20font-size='9'%20font-weight='700'%20fill='%23f7f5ef'%20text-anchor='middle'%3EKAN%3C/text%3E%3C/svg%3E">
+<script>
+(function () {
+  try {
+    var saved = localStorage.getItem("kanbook-theme");
+    if (!saved) {
+      saved = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    document.documentElement.setAttribute("data-theme", saved);
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Перейти к содержанию</a>
+
+<header class="topbar">
+  <button class="icon-btn menu-toggle" id="menu-toggle" type="button" aria-label="Открыть оглавление" aria-expanded="false" aria-controls="sidebar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
+  <a class="brand" href="index.html">
+    <span class="brand-mark">KAN</span>
+    <span>KANBook</span>
+  </a>
+  <span class="chapter-chip">Глава 9 из 9</span>
+  <span class="topbar-spacer"></span>
+  <div class="topbar-actions">
+    <a class="icon-btn" href="chapter-8.html" title="Предыдущая глава (←)" aria-label="Предыдущая глава">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+    </a>
+    <a class="icon-btn" href="demo.html" title="Живая модель" aria-label="Живая модель">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+    </a>
+    <button class="icon-btn" id="theme-toggle" type="button" aria-label="Переключить тему" title="Тема (T)">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.2A8.6 8.6 0 1 1 9.8 3.5a7 7 0 0 0 10.7 10.7z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="progress-track" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+
+<div class="layout">
+  <aside class="sidebar" id="sidebar">
+    <p class="sidebar-title">Содержание главы</p>
+    <p class="sidebar-chapter">9. Развёртывание и капстоун</p>
+    <nav id="sidebar-toc" aria-label="Содержание главы"></nav>
+    <div class="sidebar-foot">
+      <div>
+        Главы:
+        <a href="chapter-1.html">1</a> ·
+        <a href="chapter-2.html">2</a> ·
+        <a href="chapter-3.html">3</a> ·
+        <a href="chapter-4.html">4</a> ·
+        <a href="chapter-5.html">5</a> ·
+        <a href="chapter-6.html">6</a> ·
+        <a href="chapter-7.html">7</a> ·
+        <a href="chapter-8.html">8</a> ·
+        <a href="chapter-9.html"><strong>9</strong></a>
+      </div>
+      <div style="margin-top:8px">Клавиши <kbd>←</kbd> <kbd>→</kbd> листают главы, <kbd>T</kbd> переключает тему.</div>
+      <div style="margin-top:8px"><a href="primer.html#s0-4">Словарь терминов</a></div>
+    </div>
+  </aside>
+  <button class="sidebar-scrim" id="sidebar-scrim" type="button" aria-label="Закрыть меню"></button>
+
+  <main class="content" id="main">
+    <header class="book-header">
+      <p class="eyebrow">Часть III · По желанию</p>
+      <h1>Развёртывание и капстоун: KAN, которой пользуются</h1>
+      <p class="lead">
+        Модель в блокноте — это эксперимент. Модель, к которой есть удобный
+        доступ, проверка входа, тесты и ограничения, — это продукт. Соберём
+        сервис, проверим его и составим план собственного проекта.
+      </p>
+      <div class="meta-row">
+        <span class="meta-chip"><strong>Глава 9</strong> из 9</span>
+        <span class="meta-chip">≈ 60 минут</span>
+        <span class="meta-chip">сервис · тесты</span>
+        <span class="meta-chip">сложность: средняя</span>
+      </div>
+    </header>
+
+    <article>
+      <p class="epigraph">
+        Работает у меня — не значит работает у пользователя.
+        <cite>Народная инженерная мудрость</cite>
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Зачем эта глава</p>
+        <p>
+          Модель, которой не может воспользоваться другой человек, остаётся
+          экспериментом. Здесь обязательный финал: демо или API, проверка входа,
+          тесты, ограничения и документация. Docker — один из способов запуска,
+          не самоцель; «капстоун» — итоговый проект, который вы собираете сами.
+        </p>
+      </div>
+      <h2 id="s9-1" data-num="9.1">От модели к сервису</h2>
+
+      <p>
+        Обученная KAN — это файл с числами и функция инференса. Чтобы ей могли
+        пользоваться люди, нужны ещё четыре вещи:
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Слой</th><th>Задача</th><th>В нашем примере</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Инференс</td><td>Превратить вход в вероятности</td><td><code>predict()</code> на Python и JS</td></tr>
+            <tr><td>Интерфейс</td><td>Дать человеку ввести данные и увидеть ответ</td><td><code>demo.html</code></td></tr>
+            <tr><td>API</td><td>Дать доступ программам</td><td><code>code/serve_pure.py</code></td></tr>
+            <tr><td>Надёжность</td><td>Валидация, тесты, логи, мониторинг</td><td><code>code/test_predict.py</code>, проверки диапазонов</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        Не начинайте с Kubernetes и микросервисов. Начните с одного статического
+        файла и одного HTTP-эндпоинта. Если модель полезна, инфраструктура
+        вырастет вместе с нагрузкой.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Что значит «пользуются»</p>
+        <p>
+          Человек открыл страницу, ввёл свои данные, получил понятный ответ и
+          понял ограничения. Программа отправила JSON и получила JSON. Этого
+          достаточно для первого релиза. Красивая обёртка не компенсирует
+          нечестную модель, а честная модель без интерфейса остаётся
+          экспериментом.
+        </p>
+      </div>
+
+      <h2 id="s9-2" data-num="9.2">Статическое демо: без сервера</h2>
+
+      <p>
+        Самое дешёвое развёртывание — статическая страница. У нас уже есть
+        <a href="demo.html">demo.html</a>: она загружает веса из
+        <code>assets/iris_model.js</code> и считает всё в браузере. Ни Python, ни
+        сервер, ни интернет не нужны.
+      </p>
+
+      <p>
+        Такой вариант хорош, когда:
+      </p>
+
+      <ul>
+        <li>модель маленькая и её веса не секрет;</li>
+        <li>нужен офлайн-доступ или демонстрация на слабом ноутбуке;</li>
+        <li>нет необходимости хранить историю запросов.</li>
+      </ul>
+
+      <p>
+        Ограничения тоже честные: любой может прочитать веса, нет
+        аутентификации и логирования, а обновление модели требует заменить файл
+        на клиенте. Для публичного сервиса с приватными данными нужен серверный
+        API.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Не кладите секреты в статику</p>
+        <p>
+          Всё, что загружено в браузер, доступно пользователю. API-ключи,
+          персональные данные и «секретные» веса в статическом демо хранить
+          нельзя. Наши веса специально открыты — это учебная модель.
+        </p>
+      </div>
+
+      <h2 id="s9-3" data-num="9.3">HTTP-сервис без зависимостей</h2>
+
+      <p>
+        Для полноценного API достаточно стандартной библиотеки Python. Скрипт
+        <code>code/serve_pure.py</code> отдаёт статические файлы книги и
+        обрабатывает два эндпоинта:
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Метод и путь</th><th>Что делает</th><th>Ответ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>GET /api/health</code></td><td>Проверка живости</td><td><code>{"status": "ok"}</code></td></tr>
+            <tr><td><code>GET /api/model</code></td><td>Метаданные и метрики</td><td>JSON без весов</td></tr>
+            <tr><td><code>POST /api/predict</code></td><td>Предсказание по 4 признакам</td><td>класс, вероятности, confidence</td></tr>
+            <tr><td><code>GET /demo.html</code></td><td>Статическая страница</td><td>HTML</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">serve_pure.py — обработчик запроса</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">def do_POST(self):
+    if urlparse(self.path).path != "/api/predict":
+        self._send_json(404, {"error": "not found"})
+        return
+
+    length = int(self.headers.get("Content-Length", "0"))
+    if length <= 0 or length > MAX_BODY:
+        self._send_json(413, {"error": "слишком большой запрос"})
+        return
+
+    try:
+        payload = json.loads(self.rfile.read(length))
+        result = predict([float(v) for v in payload["features"]])
+    except (ValueError, TypeError, KeyError) as exc:
+        self._send_json(400, {"error": str(exc)})
+        return
+
+    self._send_json(200, result)</code></pre>
+      </div>
+
+      <p>
+        Запуск и проверка:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал — проверено</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/serve_pure.py
+сервис: http://127.0.0.1:8000/demo.html
+API:    POST http://127.0.0.1:8000/api/predict
+
+$ curl -s -X POST http://127.0.0.1:8000/api/predict \
+       -H 'Content-Type: application/json' \
+       -d '{"features":[5.9,2.8,4.3,1.3]}'
+
+{"class": "versicolor",
+ "confidence": 0.9999984892431044,
+ "probabilities": {"setosa": 8.3e-07,
+                   "versicolor": 0.9999984892431044,
+                   "virginica": 6.7e-07}}
+
+$ curl -s -X POST http://127.0.0.1:8000/api/predict \
+       -H 'Content-Type: application/json' \
+       -d '{"features":[99,2,3,1]}'
+
+{"error": "sepal_length = 99.0 вне диапазона [4.3, 7.9]"}</code></pre>
+      </div>
+
+      <p>
+        Обратите внимание на валидацию: сервис не пытается «предсказать хоть
+        что-нибудь» на входе вне обучающего диапазона, а возвращает понятную
+        ошибку 400. Это важнее, чем кажется: молчаливая экстраполяция — источник
+        опасных ответов.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Почему без FastAPI</p>
+        <p>
+          FastAPI — отличный инструмент, но для одной модели и четырёх чисел
+          хватает <code>http.server</code>. Меньше зависимостей — проще запустить
+          на слабом ноутбуке и в контейнере. Когда появятся десятки эндпоинтов,
+          схемы и авторизация, переход на FastAPI будет оправдан.
+        </p>
+      </div>
+
+      <h2 id="s9-4" data-num="9.4">Docker и публикация</h2>
+
+      <p>
+        Контейнер фиксирует окружение: тот же Python, те же файлы, тот же запуск
+        на любой машине. Для нашего сервиса достаточно образа на
+        <code>python:3.12-slim</code> — никаких тяжёлых зависимостей.
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">code/Dockerfile</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY code ./code
+COPY assets ./assets
+COPY demo.html index.html ./
+COPY chapter-*.html ./
+
+EXPOSE 8000
+
+CMD ["python", "code/serve_pure.py", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+      </div>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ docker build -f code/Dockerfile -t kan-iris .
+$ docker run --rm -p 8000:8000 kan-iris
+# http://localhost:8000/demo.html</code></pre>
+      </div>
+
+      <p>
+        Для публичного доступа нужен HTTPS, reverse proxy (nginx/Caddy), лимиты
+        запросов и логирование. Не выставляйте <code>--host 0.0.0.0</code> в
+        открытую сеть без этих слоёв. И помните: контейнер не делает модель
+        безопасной — он лишь упаковывает код.
+      </p>
+
+      <div class="callout warning">
+        <p class="callout-title">Не загружайте pickle из интернета</p>
+        <p>
+          <code>pickle</code> и <code>torch.load</code> могут исполнять
+          произвольный код. Для своих весов используйте формат, которому
+          доверяете, проверяйте контрольные суммы и не принимайте файлы моделей
+          от незнакомых людей. Наш JSON — безопасный учебный пример, хотя и он
+          требует валидации структуры.
+        </p>
+      </div>
+      <h2 id="s9-5" data-num="9.5">Тесты, мониторинг и доверие</h2>
+
+      <p>
+        Модель может сломаться тихо: файл не загрузился, порядок признаков
+        изменился, вход вышел за диапазон. Поэтому минимум — автотесты на
+        инференс и валидацию. В проекте есть
+        <code>code/test_predict.py</code>:
+      </p>
+
+      <div class="code-block">
+        <div class="code-head">
+          <span class="code-title">терминал — проверено</span>
+          <button class="copy-btn" type="button">Копировать</button>
+        </div>
+        <pre><code class="language-python">$ python3 code/test_predict.py
+
+test_out_of_range ... ok
+test_setosa ... ok
+test_versicolor ... ok
+test_virginica ... ok
+test_wrong_length ... ok
+
+Ran 5 tests in 0.001s
+OK</code></pre>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Что проверять</th><th>Пример</th><th>Почему</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Формат входа</td><td>4 числа, не 3 и не 5</td><td>Иначе индекс уйдёт не туда</td></tr>
+            <tr><td>Диапазон</td><td>4.3 ≤ sepal_length ≤ 7.9</td><td>KAN не умеет экстраполировать</td></tr>
+            <tr><td>Тип</td><td>NaN/∞ отклоняются</td><td>Испортят вероятности</td></tr>
+            <tr><td>Сумма вероятностей</td><td>≈ 1.0</td><td>Признак корректного softmax</td></tr>
+            <tr><td>Известные примеры</td><td>setosa → setosa</td><td>Регрессия при обновлении модели</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>
+        В продакшене добавляют <strong>мониторинг</strong>: распределение входов,
+        долю отказов, уверенность модели, задержку и обратную связь. Если входы
+        начали смещаться (data drift), точность может упасть без единой ошибки в
+        коде. Тогда модель переобучают на новых данных и снова проверяют.
+      </p>
+
+      <div class="callout note">
+        <p class="callout-title">Что логировать, а что нет</p>
+        <p>
+          Логируйте версию модели, время, тип ошибки и агрегированные метрики.
+          Не храните персональные данные без необходимости и согласия. Для
+          медицинских, финансовых и юридических решений нужны отдельные
+          требования, аудит и человек в контуре.
+        </p>
+      </div>
+
+      <h2 id="s9-6" data-num="9.6">Капстоун: свой KAN-сервис</h2>
+
+      <p>
+        Теперь у вас есть все части. Соберите собственный проект по этому
+        чек-листу. Он специально линейный: не переходите к следующему пункту,
+        пока не выполнен предыдущий.
+      </p>
+
+      <ol>
+        <li>
+          <strong>Задача.</strong> Одна узкая задача с числовым или категориальным
+          ответом. Не «сделать ИИ», а «предсказать X по Y».
+        </li>
+        <li>
+          <strong>Данные.</strong> Соберите таблицу, проверьте пропуски,
+          дубликаты и диапазоны. Зафиксируйте, откуда они и можно ли их
+          использовать.
+        </li>
+        <li>
+          <strong>Baseline.</strong> Самое частое значение, линейная модель или
+          маленький MLP. Без baseline вы не узнаете, полезна ли KAN.
+        </li>
+        <li>
+          <strong>Split и метрики.</strong> Train/val/test, стратификация, CV,
+          метрика под задачу. Тест — один раз.
+        </li>
+        <li>
+          <strong>KAN.</strong> Начните с одного слоя, G=3–5, k=3. Нормализуйте
+          входы в [−1, 1]. Подберите learning rate и число шагов.
+        </li>
+        <li>
+          <strong>Сравнение.</strong> KAN vs baseline при одинаковом бюджете.
+          Запишите accuracy/MSE, время, разброс по seed.
+        </li>
+        <li>
+          <strong>Экспорт.</strong> Сохраните веса и нормализацию в JSON. Сделайте
+          модель-карточку (пример: <code>code/MODEL_CARD.md</code>): данные,
+          метрики, ограничения.
+        </li>
+        <li>
+          <strong>Интерфейс.</strong> Статическая страница или API. Валидация
+          входа, понятные ошибки, ограничения на экране.
+        </li>
+        <li>
+          <strong>Тесты.</strong> Хотя бы 5 тестов: корректный вход, границы,
+          неверная длина, неверный тип, известный пример.
+        </li>
+        <li>
+          <strong>Деплой и мониторинг.</strong> Локальный сервер, контейнер или
+          хостинг. Логи, версия модели, алерт на рост ошибок.
+        </li>
+      </ol>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Этап</th><th>Минимальный результат</th><th>Сколько времени</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Данные и baseline</td><td>CSV + метрика baseline</td><td>1–2 дня</td></tr>
+            <tr><td>KAN и оценка</td><td>CV ± std, сравнение</td><td>1–2 дня</td></tr>
+            <tr><td>Экспорт и демо</td><td>JSON + рабочая страница</td><td>1 день</td></tr>
+            <tr><td>API и тесты</td><td>Эндпоинт + 5 тестов</td><td>1 день</td></tr>
+            <tr><td>Деплой и документация</td><td>Ссылка + README + модель-карточка</td><td>1 день</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout practice">
+        <p class="callout-title">Критерий готовности</p>
+        <p>
+          Проект готов, когда незнакомый человек открывает ссылку, вводит свои
+          данные, получает ответ, видит ограничения — и вы можете объяснить, на
+          каких данных и с какой метрикой обучена модель. Всё остальное —
+          улучшения.
+        </p>
+      </div>
+
+      <div class="callout warning">
+        <p class="callout-title">Этика и высокая цена ошибки</p>
+        <p>
+          Не применяйте учебную KAN для медицинских, юридических, финансовых или
+          кадровых решений. На маленьком наборе она не отражает реальный мир.
+          Если цена ошибки высока, нужны валидация экспертом, человеческий
+          контроль, объяснимость и право на апелляцию.
+        </p>
+      </div>
+      <h2 id="s9-7" data-num="9.7">Упражнения</h2>
+
+      <ol>
+        <li>
+          Зачем сервису отклонять вход вне обучающего диапазона, если KAN всё
+          равно вернёт какое-то число?
+        </li>
+        <li>
+          Почему не стоит загружать <code>pickle</code> с весами из интернета?
+        </li>
+        <li>
+          Что логировать в сервисе, а что — нет? Приведите по два примера.
+        </li>
+        <li>
+          Как заметить, что данные «уплыли» и модель устарела?
+        </li>
+        <li>
+          Какие поля вы включите в модель-карточку для своей KAN?
+        </li>
+        <li>
+          Составьте план капстоуна для своей предметной области: задача, данные,
+          baseline, метрика, интерфейс.
+        </li>
+        <li>
+          Чем статическое демо отличается от HTTP API и когда нужно каждое?
+        </li>
+      </ol>
+
+      <details>
+        <summary>Ответы и комментарии</summary>
+        <ol>
+          <li>
+            За пределами <span class="math">[min, max]</span> сплайн
+            экстраполирует, и ответ становится непредсказуемым. Лучше честная
+            ошибка 400, чем уверенно неверный ответ.
+          </li>
+          <li>
+            <code>pickle</code> может исполнять произвольный код при загрузке.
+            Используйте доверенные форматы, проверяйте источник и контрольные
+            суммы.
+          </li>
+          <li>
+            Логировать: версию модели, время, тип ошибки, агрегированные метрики.
+            Не логировать без необходимости: имена, точные адреса, медицинские
+            данные, содержимое запросов.
+          </li>
+          <li>
+            Сравнивать распределения входов с обучающими, следить за долей
+            отказов, уверенностью, точностью на размеченной подвыборке и
+            обратной связью пользователей.
+          </li>
+          <li>
+            Название и версия, задача, данные и их происхождение, архитектура,
+            число параметров, метрики CV/test, ограничения, дата, автор,
+            лицензия.
+          </li>
+          <li>
+            Например: предсказание урожайности по погоде и почве; данные — CSV
+            за 5 лет; baseline — среднее по региону; метрика — MAE; интерфейс —
+            форма + API.
+          </li>
+          <li>
+            Статическое демо работает в браузере без сервера и подходит для
+            открытых моделей и офлайна. API нужен для приватных данных,
+            логирования, авторизации и интеграций.
+          </li>
+        </ol>
+      </details>
+
+      <h2 id="s9-8" data-num="9.8">Итоги части II и всей книги</h2>
+
+      <p>
+        Мы прошли полный путь: от «что такое обучение» до работающей KAN,
+        которой можно пользоваться. Вторая половина книги добавила то, чего не
+        хватало части I:
+      </p>
+
+      <ul>
+        <li>
+          <strong>Данные и оценка.</strong> Split, нормализация только на train,
+          метрики, кросс-валидация, baseline.
+        </li>
+        <li>
+          <strong>Реальная модель.</strong> KAN 4 → 3 на Iris, 111 параметров,
+          95.3% ± 2.7% в CV, сохранение весов и живое демо.
+        </li>
+        <li>
+          <strong>Претрейн и LLM.</strong> Честное объяснение двухэтапного
+          обучения, эксперимент с warm start и границы применимости KAN.
+        </li>
+        <li>
+          <strong>Развёртывание.</strong> Статическая страница, HTTP API без
+          зависимостей, Docker, тесты, мониторинг и капстоун-план.
+        </li>
+      </ul>
+
+      <div class="callout note">
+        <p class="callout-title">Что вы теперь умеете</p>
+        <p>
+          Объяснить, как работает нейросеть и KAN. Собрать данные, обучить
+          модель, честно её оценить, сохранить веса, поднять сервис и показать
+          результат людям. Это и есть минимальный полный цикл ML-инженера — на
+          маленьком, но настоящем примере.
+        </p>
+      </div>
+
+      <p>
+        Дальше можно двигаться вглубь: свёрточные и графовые KAN,
+        KAN-трансформеры, PDE и научные вычисления, эффективные реализации
+        базиса, теория приближения. Но теперь у вас есть главное — работающий
+        скелет проекта, который можно заменить своей задачей.
+      </p>
+
+      <div class="callout practice">
+        <p class="callout-title">Финальное упражнение</p>
+        <p>
+          Возьмите свои данные, повторите путь из главы 7 и замените Iris.
+          Если модель окажется полезной — разверните её по главе 9 и дайте
+          ссылку человеку, который не знает, что такое KAN. Если он сможет
+          воспользоваться и понять ограничения, вы достигли цели.
+        </p>
+      </div>
+
+      <p>
+        Спасибо, что дошли до конца. Дальше — только ваши данные, ваши вопросы
+        и аккуратные эксперименты.
+      </p>
+    </article>
+
+    <nav class="chapter-nav" aria-label="Навигация по главам">
+      <a class="prev" href="chapter-8.html">
+        <span class="dir">← Предыдущая</span>
+        <span class="name">8. Претрейн, дообучение и LLM: как обучать KAN</span>
+      </a>
+      <a class="toc-link" href="index.html">
+        <span class="dir">Оглавление</span>
+        <span class="name">Все главы</span>
+      </a>
+      <a class="next" href="demo.html">
+        <span class="dir">Дальше →</span>
+        <span class="name">Живая KAN: попробовать</span>
+      </a>
+    </nav>
+  </main>
+</div>
+
+<footer class="book-footer">
+  <div>KANBook · часть III · глава 9 из 9</div>
+  <div>
+    <a href="index.html">Оглавление</a>
+    <span class="sep">·</span>
+    <a href="demo.html">Живая KAN</a>
+  </div>
+</footer>
+
+<script src="assets/book.js"></script>
+</body>
+</html>
+
+
+
+
